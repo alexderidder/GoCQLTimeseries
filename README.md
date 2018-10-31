@@ -13,12 +13,7 @@ https://medium.com/the-new-control-plane/generating-self-signed-certificates-on-
 # Run sockets
  
 ## Setup config files
-Edit examples/config/conf.json & server/config/conf.json to your setup
-
-## Run examples
-go run main.go --mode example1_GET
-go run main.go --mode example1_INC
-go run main.go --mode example1_DEC
+ server/config/conf.json to your setup
 
 ## Run server
 go run main.go --mode server
