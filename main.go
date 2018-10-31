@@ -1,8 +1,8 @@
 package main
 
 import (
-	"GoCQLSockets/server/database/connector"
-	"GoCQLSockets/server/tcp_server/connector"
+	"CrownstoneServer/server/database/connector"
+	"CrownstoneServer/server/tcp_server/connector"
 )
 
 func main() {

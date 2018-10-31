@@ -1,5 +1,15 @@
 package parser
 
+import (
+	"encoding/binary"
+	"encoding/json"
+)
+
+type Error struct {
+	Code    uint32 `json:"code"`
+	Message string `json:"message"`
+}
+
 func ParseHeader(request []byte) (uint32, uint32, uint32, uint32) {
 	result := make([]uint32, 4)
 	for i := 0; i < 4; i++ {
@@ -11,18 +21,15 @@ func ParseHeader(request []byte) (uint32, uint32, uint32, uint32) {
 
 func ParseOpCode(opCode uint32, message []byte) []byte {
 	switch opCode {
-
-	case 100:
-		//Insert
+	//TODO: insert
+	//case 100:
+	//TODO: select
 	case 200:
-		//Select
+		return parseSelect(message)
 	default:
-		//Return error 'opcode unknown'
+		return ParseError(10, "Server doesn't recognise opcode")
 	}
-
-	return []byte{}
 }
-
 
 func byteToInt(request []byte, beginIndex int) uint32 {
 	var result uint32
@@ -34,4 +41,42 @@ func byteToInt(request []byte, beginIndex int) uint32 {
 	beginIndex++
 	result |= uint32(request[beginIndex]) << 24
 	return result
+}
+
+func ParseError(code uint32, message string) []byte {
+	var error Error
+	if code == 0 && len(message) == 0 {
+		error = Error{500, "Server created error without code and message"}
+	} else if code == 0 {
+		error = Error{500, "Server created error without code"}
+	} else if len(message) == 0 {
+		error = Error{500, "Server created error without message"}
+	} else {
+		error = Error{code, message}
+	}
+
+	errBytes, _ := json.Marshal(error)
+	//TODO: Marshal error
+	errCode := make([]byte, 4)
+	binary.LittleEndian.PutUint32(errCode, 100)
+	return append(errCode, errBytes...)
+}
+
+func MakeHeader(messageLength, requestID, responseID, opCode uint32) []byte {
+	var requestHeader []byte
+	//Request headers
+	variable := make([]byte, 4)
+
+	binary.LittleEndian.PutUint32(variable, messageLength)
+	requestHeader = append(requestHeader, variable...)
+
+	binary.LittleEndian.PutUint32(variable, requestID)
+	requestHeader = append(requestHeader, variable...)
+
+	binary.LittleEndian.PutUint32(variable, responseID)
+	requestHeader = append(requestHeader, variable...)
+
+	binary.LittleEndian.PutUint32(variable, opCode)
+	requestHeader = append(requestHeader, variable...)
+	return requestHeader
 }

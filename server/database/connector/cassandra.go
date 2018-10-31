@@ -1,7 +1,7 @@
 package cassandra
 
 import (
-	"GoCQLSockets/server/config"
+	"CrownstoneServer/server/config"
 	"fmt"
 	"github.com/gocql/gocql"
 	"time"
