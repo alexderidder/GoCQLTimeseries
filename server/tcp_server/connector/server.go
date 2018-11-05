@@ -91,7 +91,7 @@ func (manager *ClientManager) receive(client *Client) {
 			break
 		}
 		if length > 0 {
-			client.data <- []byte(message)
+			client.data <- message[:length]
 		}
 	}
 }
@@ -111,48 +111,46 @@ func (client *Client) processReceivedMessage() bool {
 	case message, ok := <-client.data:
 		if !ok {
 			return false
+		}
+
+		requestLength, requestID, _, opCode := parser.ParseHeader(message)
+		result = message
+		if requestLength == 0 {
+			client.sendResponseError(2, "Header doesn't contain request length", 0)
+		} else if requestID == 0 {
+			client.sendResponseError(2, "Header doesn't contain request ID", 0)
+		} else if opCode == 0 {
+			client.sendResponseError(2, "Header doesn't contain opCode", 0)
 		} else {
-			requestLength, requestID, _, opCode := parser.ParseHeader(message)
-			result = message
-			if requestLength == 0 {
-				client.sendResponseError(2, "Header doesn't contain request length", 0)
-			} else if requestID == 0 {
-				client.sendResponseError(2, "Header doesn't contain request ID", 0)
-			} else if opCode == 0 {
-				client.sendResponseError(2, "Header doesn't contain opCode", 0)
-			} else {
-				varLength := requestLength
-				for varLength > uint32(len(message)) {
-					select {
-					case custom, ok := <-client.data:
-						if !ok {
-							return false
-						} else {
-							result = append(result, custom...)
-							varLength -= uint32(len(message))
-						}
-					case <-time.After(time.Duration(config.Config.Server.Messages.Timeout) * time.Second):
-						client.sendResponseError(20, "Server didn't receive full message", requestID)
-						return true
+			for requestLength > uint32(len(message)) {
+				select {
+				case custom, ok := <-client.data:
+					if !ok {
+						return false
+					} else {
+						result = append(result, custom...)
 					}
-
+				case <-time.After(time.Duration(config.Config.Server.Messages.Timeout) * time.Second):
+					client.sendResponseError(20, "Server didn't receive full message", requestID)
+					return true
 				}
-				if len(result) > int(requestLength) {
-					result = result[:requestLength]
-				}
-				result = result[16:]
-				responseWithoutHeader := parser.ParseOpCode(opCode, result)
 
-				client.sendResponseWithoutHeader(requestID, responseWithoutHeader)
 			}
+			if len(result) > int(requestLength) {
+				result = result[:requestLength]
+			}
+			result = result[16:]
+			responseWithoutHeader := parser.ParseOpCode(opCode, result)
+			client.sendResponseWithoutHeader(requestID, responseWithoutHeader)
+
 		}
 	}
 	return true
 }
 
 func (client *Client) sendResponseWithoutHeader(requestID uint32, responseWithoutHeader []byte) {
+	//fmt.Println(uint32(len(responseWithoutHeader)) + 16)
 	request := append(parser.MakeHeader(uint32(len(responseWithoutHeader)+16), 0, requestID, 1), responseWithoutHeader...)
-	fmt.Println(request)
 	_, err := client.socket.Write(request)
 	if err != nil {
 		//TODO: write error

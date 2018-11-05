@@ -7,7 +7,6 @@ import (
 
 func main() {
 	go cassandra.StartCassandra()
-	CassandraSession := cassandra.Session
-	defer CassandraSession.Close()
+	defer cassandra.Session.Close()
 	connector.StartServerMode()
 }

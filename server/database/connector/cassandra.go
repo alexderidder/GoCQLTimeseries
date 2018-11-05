@@ -17,20 +17,22 @@ func StartCassandra() {
 }
 
 func connect() {
-	var err error
-	Session, err = cluster.CreateSession()
-	if err != nil {
-		fmt.Println(err)
-		Reconnect()
-	}
+	Reconnect(true)
+
 	fmt.Println("cassandra connection")
 }
-func Reconnect() {
+func Reconnect(firstTime bool) {
 	var err error
 	for {
-		time.Sleep(time.Duration(config.Config.Database.ReconnectTime) * time.Second)
+		if !firstTime{
+			time.Sleep(time.Duration(config.Config.Database.ReconnectTime) * time.Second)
+		}
+
+
 		Session, err = cluster.CreateSession()
 		if err != nil {
+			//TODO: Printing 3 lines with the same error when keyspace doesn't exists
+			firstTime = false
 			fmt.Println(err)
 		} else {
 			return

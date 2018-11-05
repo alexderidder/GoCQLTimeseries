@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"CrownstoneServer/server/database/connector"
 	"encoding/binary"
 	"encoding/json"
 )
@@ -20,6 +21,9 @@ func ParseHeader(request []byte) (uint32, uint32, uint32, uint32) {
 }
 
 func ParseOpCode(opCode uint32, message []byte) []byte {
+	if cassandra.Session == nil{
+		return ParseError(300, "There is no connection between GoCQL-driver and Cassandra")
+	}
 	switch opCode {
 	//TODO: insert
 	//case 100:

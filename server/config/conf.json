@@ -19,7 +19,7 @@
         "ip-address": "127.0.0.1"
       }
     ],
-    "keyspace": "sockettest",
+    "keyspace": "crownstone",
     "reconnect_time": 5
   }
 }

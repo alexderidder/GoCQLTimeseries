@@ -18,30 +18,54 @@ type query struct {
 	Interval  uint32       `json:"interval"`
 }
 
-type response struct {
+type responseFormat struct {
 	StartTime time.Time `json:"startTime"`
 	EndTime   time.Time `json:"endTime"`
 	Interval  uint32    `json:"interval"`
-	Stones    []stones    `json:"stones"`
+	Stones    []stone   `json:"stones"`
 }
 
-type stones struct {
-	StoneID gocql.UUID `json:"stone_id"`
-	Types  []types `json:"types"`
+type stone struct {
+	StoneID gocql.UUID `json:"stoneID"`
+	Fields  []field    `json:"fields"`
 }
 
-type types  struct {
-	Type         string    `json:"type"`
-	Measurements []float32 `json:"measurements"`
+type field struct {
+	Field string `json:"field"`
+	Data  []Data `json:"Data"`
 }
 
-var posTypes = []string{"pf", "kwh", "w"}
+type Data struct {
+	Time  time.Time `json:"time"`
+	Value float32   `json:"value"`
+}
+
+const (
+	UnitW      string = "w"
+	Unitpf     string = "pf"
+	UnitWAndpf string = "w_pf"
+	UnitkWh    string = "kwh"
+)
 
 var format = "2006-01-02 15:04:05"
 
 func parseSelect(message []byte) []byte {
-	var request query
-	err := json.Unmarshal(message, request)
+	flag := byteToInt(message, 0)
+
+	switch flag {
+	case 1:
+
+		return parseSelectJSON(message[4:])
+
+	default:
+		return ParseError(10, "Server doesn't recognise flag")
+	}
+
+}
+
+func parseSelectJSON(message []byte) []byte {
+	request := query{}
+	err := json.Unmarshal(message, &request)
 	if err != nil {
 		return ParseError(100, "JSON layout is wrong")
 	}
@@ -49,91 +73,88 @@ func parseSelect(message []byte) []byte {
 	if errBytes != nil {
 		return errBytes
 	}
-	leftQuery, rightQuery := createQueryPerStoneID(request, requestedTypes)
+	wAndPfTableQuery, kwhTableQuery := createQueryPerStoneID(request, requestedTypes)
+	response := responseFormat{request.StartTime, request.EndTime, request.Interval, []stone{}}
 
-	response := response{request.StartTime, request.EndTime, request.Interval, []stones{}}
-
-
-	for _, value := range request.StoneIDs {
-		stones := stones{}
-		stones.StoneID = value
-		stones.Types = []types{}
+	for _, stoneID := range request.StoneIDs {
+		stone := stone{}
+		stone.StoneID = stoneID
+		stone.Fields = []field{}
 		var iterator *gocql.Iter
-		if requestedTypes[0] && requestedTypes[1] {
-			iterator = cassandra.Session.Query(leftQuery, value).Iter()
-			var value, value2 float32
-			var listValue, listValue2 []float32
-			for iterator.Scan(&value, &value2) {
-				listValue = append(listValue, value)
-				listValue2 = append(listValue2, value2)
+
+		switch requestedTypes[0] {
+		case UnitWAndpf:
+			iterator = cassandra.Session.Query(wAndPfTableQuery, stoneID).Iter()
+			var timeOfRow time.Time
+			var w, pf float32
+			var kWhList, pfList []Data
+			for iterator.Scan(&timeOfRow, &w, &pf) {
+				kWhList = append(kWhList, Data{timeOfRow, w})
+				pfList = append(pfList, Data{timeOfRow, pf})
 			}
 			if err := iterator.Close(); err != nil {
 				log.Fatal(err)
 				//TODO: research if error code is needed
 			}
 
-			stones.Types = append(stones.Types, types{posTypes[0] , listValue})
-			stones.Types = append(stones.Types, types{posTypes[1] , listValue2})
-		} else if requestedTypes[0] {
-			iterator = cassandra.Session.Query(leftQuery, value).Iter()
-			stones.Types = append(stones.Types, types{posTypes[0] , test12(iterator)})
-		} else if requestedTypes[1] {
-			iterator = cassandra.Session.Query(leftQuery, value).Iter()
-			stones.Types = append(stones.Types, types{posTypes[1] , test12(iterator)})
+			stone.Fields = append(stone.Fields, field{UnitkWh, kWhList})
+			stone.Fields = append(stone.Fields, field{Unitpf, pfList})
+		case UnitW:
+			iterator = cassandra.Session.Query(wAndPfTableQuery, stoneID).Iter()
+			measurements, err := iterateStreamWithOneFloat32PerRow(iterator, request.Interval)
+			if err != nil {
+				return ParseError(300, err.Error())
+			}
+			stone.Fields = append(stone.Fields, field{UnitW, measurements})
+		case Unitpf:
+			iterator = cassandra.Session.Query(wAndPfTableQuery, stoneID).Iter()
+			measurements, err := iterateStreamWithOneFloat32PerRow(iterator, request.Interval)
+			if err != nil {
+				return ParseError(300, err.Error())
+			}
 
+			stone.Fields = append(stone.Fields, field{Unitpf, measurements})
 		}
 
-		if requestedTypes[2] {
-			iterator = cassandra.Session.Query(rightQuery, value).Iter()
-			stones.Types = append(stones.Types, types{posTypes[2] , test12(iterator)})
+		switch requestedTypes[1] {
+		case UnitkWh:
+			iterator = cassandra.Session.Query(kwhTableQuery, stoneID).Iter()
+			measurements, err := iterateStreamWithOneFloat32PerRow(iterator, request.Interval)
+			if err != nil {
+				return ParseError(300, err.Error())
+			}
+			stone.Fields = append(stone.Fields, field{UnitkWh, measurements})
 		}
-		response.Stones = append(response.Stones, stones)
+		response.Stones = append(response.Stones, stone)
 	}
 
 	result, err := json.Marshal(response)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	opCode := make([]byte, 4)
 	binary.LittleEndian.PutUint32(opCode, 1)
 	return append(opCode, result...)
 }
 
-//func test1(iterator *gocql.Iter ) []float32{
-//	return test12(iterator, 1)[0]
-//}
-//
-//func test12(iterator *gocql.Iter, noOfValue uint16  ) [][]float32 {
-//	value := make([]float32, noOfValue)
-//	listValue := make([][]float32, noOfValue)
-//
-//	for iterator.Scan(&value) {
-//		listValue = append(listValue, value)
-//		//TODO: ADD INTERVAL
-//	}
-//	if err := iterator.Close(); err != nil {
-//		log.Fatal(err)
-//		//TODO: research if error code is needed
-//	}
-//	return listValue
-//}
 
-
-
-func test12(iterator *gocql.Iter  ) []float32 {
+func iterateStreamWithOneFloat32PerRow(iterator *gocql.Iter, interval uint32) ([]Data, error) {
 	var value float32
-	var listValue []float32
+	var measurementList []Data
+	var timeOfRow time.Time
 
-	for iterator.Scan(&value) {
-		listValue = append(listValue, value)
-		//TODO: ADD INTERVAL
+	for iterator.Scan(&timeOfRow, &value) {
+		measurementList = append(measurementList, Data{timeOfRow, value})
 	}
+
 	if err := iterator.Close(); err != nil {
-		log.Fatal(err)
-		//TODO: research if error code is needed
+		return measurementList, err
+		//TODO: error code is needed
 	}
-	return listValue
+	return measurementList, nil
 }
 
-
-func checkRequiredParameters(request query) ([]byte, []bool) {
+func checkRequiredParameters(request query) ([]byte, []string) {
 
 	if len(request.StoneIDs) == 0 {
 		return ParseError(100, "StoneID is missing"), nil
@@ -141,7 +162,7 @@ func checkRequiredParameters(request query) ([]byte, []bool) {
 	if len(request.Types) == 0 {
 		return ParseError(100, "Type is missing"), nil
 	}
-	unknownTypes, test := checkUnknownTypes(request.Types)
+	unknownTypes, test := checkUnknownAndDuplicatedTypes(request.Types)
 
 	if !unknownTypes {
 		return ParseError(100, "Unknown types added"), nil
@@ -149,32 +170,34 @@ func checkRequiredParameters(request query) ([]byte, []bool) {
 	return nil, test
 }
 
-func createQueryPerStoneID(request query, test []bool) (string, string) {
+func createQueryPerStoneID(request query, typePerQuery []string) (string, string) {
 	whereClause := getWhereClause(request)
-	var selectClause = "SELECT "
-	var leftQuery string
-	if test[0] && test[1] {
-		leftQuery = selectClause + "sum(" + posTypes[0] + "), sum(" + posTypes[1] + ")?"
-	} else if test[0] {
-		leftQuery = selectClause + "sum(" + posTypes[0] + ")"
-	} else if test[1] {
-		leftQuery = selectClause + "sum(" + posTypes[1] + ")"
+	var selectClause = "SELECT time, "
+	var kwhAndPfTable string
 
+	switch typePerQuery[0] {
+	case UnitWAndpf:
+		kwhAndPfTable = selectClause + UnitW + ", " + Unitpf + " FROM w_and_pw_by_id_and_time"
+	case UnitW:
+		kwhAndPfTable = selectClause + UnitW + " FROM w_and_pw_by_id_and_time"
+	case Unitpf:
+		kwhAndPfTable = selectClause + Unitpf + " FROM w_and_pw_by_id_and_time"
+	}
+	var wattTable string
+	switch typePerQuery[1] {
+	case UnitkWh:
+		wattTable = selectClause + UnitkWh + " FROM kwh_by_id_and_time"
 	}
 
-	var rightQuery string
-	if test[2] {
-		rightQuery = selectClause + "sum(" + posTypes[2] + ")"
-	}
-	leftQuery += whereClause
-	rightQuery += whereClause
+	kwhAndPfTable += whereClause
+	wattTable += whereClause
 
-	return leftQuery, rightQuery
+	return kwhAndPfTable, wattTable
 
 }
 
 func getWhereClause(request query) string {
-	whereClause := " FROM mytable WHERE stone_id = ?"
+	whereClause := " WHERE id = ?"
 
 	if !request.StartTime.IsZero() && !request.EndTime.IsZero() {
 		whereClause += " AND time >= " + request.StartTime.Format(format) + " AND time <= " + request.EndTime.Format(format)
@@ -182,21 +205,34 @@ func getWhereClause(request query) string {
 	return whereClause
 }
 
-func checkUnknownTypes(request []string) (bool, []bool) {
-	var test = []bool{false, false, false}
+func checkUnknownAndDuplicatedTypes(request []string) (bool, []string) {
+	var typeList = []bool{false, false, false}
 	for _, v := range request {
 		switch strings.ToLower(v) {
-		case posTypes[0]:
-			test[0] = true
-		case posTypes[1]:
-			test[1] = true
-		case posTypes[2]:
-			test[2] = true
+		case UnitW:
+			typeList[0] = true
+		case Unitpf:
+			typeList[1] = true
+		case UnitkWh:
+			typeList[2] = true
 		default:
 			return false, nil
 		}
 
 	}
-	return true, test
+	var typePerQuery = make([]string, 2)
+	if typeList[0] && typeList[1] {
+		typePerQuery[0] = UnitWAndpf
+	} else if typeList[0] {
+		typePerQuery[0] = UnitW
+	} else if typeList[1] {
+		typePerQuery[0] = Unitpf
+	}
+
+	if typeList[2] {
+		typePerQuery[1] = UnitkWh
+	}
+
+	return true, typePerQuery
 
 }
