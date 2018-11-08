@@ -20,6 +20,7 @@
       }
     ],
     "keyspace": "crownstone",
-    "reconnect_time": 5
+    "reconnect_time": 5,
+    "batch_size": 100
   }
 }

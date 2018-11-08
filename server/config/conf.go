@@ -27,6 +27,7 @@ type Configuration struct {
 		} `json:"clusters"`
 		Keyspace      string `json:"keyspace"`
 		ReconnectTime uint32    `json:"reconnect_time"`
+		BatchSize uint32 `json:"batch_size"`
 	} `json:"database"`
 }
 
@@ -40,6 +41,7 @@ func init() {
 	err := decoder.Decode(&Config)
 	if err != nil {
 		fmt.Println("Error parsing server config:", err)
+		os.Exit(0)
 	}
 
 }
