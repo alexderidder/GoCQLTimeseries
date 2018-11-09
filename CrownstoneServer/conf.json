@@ -1,0 +1,23 @@
+{
+  "server": {
+    "ip-address": "127.0.0.1",
+    "port": ":12345",
+    "certs": {
+      "directory": "server/tcp_server/certs/",
+      "pem": "server.pem",
+      "key": "server.key"
+    },
+    "messages": {
+      "timeout": 3,
+      "buffer_size": 4096
+    }
+  },
+  "database": {
+    "ip-addresses": [
+      "127.0.0.1"
+    ],
+    "keyspace": "crownstone",
+    "reconnect_time": 5,
+    "batch_size": 100
+  }
+}
