@@ -1,14 +1,14 @@
 package connector
 
 import (
+	"CrownstoneServer/model"
 	"CrownstoneServer/parser"
-	"CrownstoneServer/server/config"
 	"encoding/binary"
 	"fmt"
 	"time"
 )
 
-func (client *Client) listenToDataChannelAndProcessMessage()  {
+func (client *Client) listenToDataChannelAndProcessMessage(timeout uint32)  {
 	defer client.socket.Close()
 	var result []byte
 	for {
@@ -18,25 +18,16 @@ func (client *Client) listenToDataChannelAndProcessMessage()  {
 				return
 			}
 
-			requestLength, requestID, _, opCode := parser.ParseHeader(message)
+			request := model.ByteToArray(message)
+			err := request.CheckHeader()
+			if !err.IsNull() {
+				fmt.Println(err)
+				client.writeJsonResponse(request.RequestID, err.MarshallErrorAndAddFlag())
+			}
 			result = message
-			if requestLength == 0 {
-				errBytes := parser.ParseError(2, "Header doesn't contain request length")
-				client.writeJsonResponse(0, errBytes)
-				continue
-			}
-			if requestID == 0 {
-				errBytes := parser.ParseError(2, "Header doesn't contain request requestID")
-				client.writeJsonResponse(0, errBytes)
-				continue
-			}
-			if opCode == 0 {
-				errBytes := parser.ParseError(2, "Header doesn't contain opCode")
-				client.writeJsonResponse(requestID, errBytes)
-				continue
-			}
 
-			for requestLength > uint32(len(result)) {
+
+			for request.MessageLength > uint32(len(result)) {
 				select {
 				case custom, ok := <-client.data:
 					if !ok {
@@ -44,19 +35,19 @@ func (client *Client) listenToDataChannelAndProcessMessage()  {
 					} else {
 						result = append(result, custom...)
 					}
-				case <-time.After(time.Duration(config.Config.Server.Messages.Timeout) * time.Second):
-					errBytes := parser.ParseError(20, "Server didn't receive full message")
-					client.writeJsonResponse(requestID, errBytes)
+				case <-time.After(time.Duration(timeout) * time.Second):
+					errBytes := model.Error{20, "Server didn't receive full message"}.MarshallErrorAndAddFlag()
+					client.writeJsonResponse(request.RequestID, errBytes)
 					continue
 				}
 
 			}
-			if len(result) > int(requestLength) {
-				result = result[:requestLength]
+			if len(result) > int(request.MessageLength) {
+				result = result[:request.MessageLength]
 			}
 			result = result[16:]
-			responseWithoutHeader := parser.ParseOpCode(opCode, result)
-			client.writeJsonResponse(requestID, responseWithoutHeader)
+			responseWithoutHeader := parser.ParseOpCode(request.OpCode, result)
+			client.writeJsonResponse(request.RequestID, responseWithoutHeader)
 		}
 	}
 

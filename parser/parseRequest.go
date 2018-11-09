@@ -1,118 +1,78 @@
 package parser
 
 import (
-	"CrownstoneServer/server/database/connector"
-	"encoding/binary"
-	"encoding/json"
+	"CrownstoneServer/model"
 	"strings"
 )
 
-type Error struct {
-	Code    uint32 `json:"code"`
-	Message string `json:"message"`
-}
-
 type Command interface {
-	parseFlag() []byte
+	parseFlag() bool
+	parseJSON() bool
+	checkParameters() model.Error
+	parseJSONToDatabaseQueries() []byte
 }
 
 func ParseOpCode(opCode uint32, message []byte) []byte {
-	if cassandra.Session == nil{
-		return ParseError(300, "There is no connection between GoCQL-driver and Cassandra")
-	}
 	switch opCode {
 	//TODO: insert
 	case 100:
-		i := insert{message}
+		i := Insert{message, &model.InsertJSON{}}
 		return parser(i)
 	case 200:
-		s := selectCommand{message}
+		s := Get{message, &model.RequestSelectJSON{}}
 		return parser(s)
 	case 500:
-		d := delete{message}
-		return  parser(d)
+		d := Delete{message, &model.DeleteJSON{}}
+		return parser(d)
 		//TODO: Research delete management
 	default:
-		return ParseError(10, "Server doesn't recognise opcode")
+		return model.Error{10, "Server doesn't recognise opcode"}.MarshallErrorAndAddFlag()
 	}
 }
 
 func parser(c Command) []byte {
-	return c.parseFlag()
-}
-
-func ParseHeader(request []byte) (uint32, uint32, uint32, uint32) {
-	result := make([]uint32, 4)
-	for i := 0; i < 4; i++ {
-		result[i] = byteToInt(request, i*4)
+	err := c.parseFlag()
+	if !err {
+		return model.Error{0, "Flag doesn't exist"}.MarshallErrorAndAddFlag()
+	}
+	err = c.parseJSON()
+	if !err {
+		return model.Error{0, "Problem with parsing JSON"}.MarshallErrorAndAddFlag()
+	}
+	errBytes := c.checkParameters()
+	if !errBytes.IsNull() {
+		return errBytes.MarshallErrorAndAddFlag()
 	}
 
-	return result[0], result[1], result[2], result[3]
-}
-
-
-
-func byteToInt(request []byte, beginIndex int) uint32 {
-	var result uint32
-	result |= uint32(request[beginIndex])
-	beginIndex++
-	result |= uint32(request[beginIndex]) << 8
-	beginIndex++
-	result |= uint32(request[beginIndex]) << 16
-	beginIndex++
-	result |= uint32(request[beginIndex]) << 24
+	result := c.parseJSONToDatabaseQueries()
 	return result
 }
 
-func ParseError(code uint32, message string) []byte {
-	var error Error
-	if code == 0 && len(message) == 0 {
-		error = Error{500, "Server created error without code and message"}
-	} else if code == 0 {
-		error = Error{500, "Server created error without code"}
-	} else if len(message) == 0 {
-		error = Error{500, "Server created error without message"}
-	} else {
-		error = Error{code, message}
-	}
-
-	errBytes, _ := json.Marshal(error)
-	//TODO: Marshal error
-	errCode := make([]byte, 4)
-	binary.LittleEndian.PutUint32(errCode, 100)
-	return append(errCode, errBytes...)
-}
-
-
-func checkUnknownAndDuplicatedTypes(request []string) (bool, [2]string) {
+func checkUnknownAndDuplicatedTypes(request []string) ([]string) {
 	var typeList = []bool{false, false, false}
 	for _, v := range request {
 		switch strings.ToLower(v) {
-		case UnitW:
+		case model.UnitW:
 			typeList[0] = true
-		case Unitpf:
+		case model.Unitpf:
 			typeList[1] = true
-		case UnitkWh:
+		case model.UnitkWh:
 			typeList[2] = true
-		default:
-			return false, [2]string{}
 		}
-
 	}
-	var typePerQuery [2]string
+	typePerQuery := make([]string, 2)
 	if typeList[0] && typeList[1] {
-		typePerQuery[0] = UnitWAndpf
+		typePerQuery[0] = model.UnitWAndpf
 	} else if typeList[0] {
-		typePerQuery[0] = UnitW
+		typePerQuery[0] = model.UnitW
 	} else if typeList[1] {
-		typePerQuery[0] = Unitpf
+		typePerQuery[0] = model.Unitpf
 	}
 
 	if typeList[2] {
-		typePerQuery[1] = UnitkWh
+		typePerQuery[1] = model.UnitkWh
 	}
 
-	return true, typePerQuery
+	return typePerQuery
 
 }
-

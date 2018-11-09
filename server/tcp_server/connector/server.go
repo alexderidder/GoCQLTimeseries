@@ -1,7 +1,6 @@
 package connector
 
 import (
-	"CrownstoneServer/server/config"
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
@@ -26,12 +25,13 @@ type Error struct {
 type Client struct {
 	socket net.Conn
 	data   chan []byte
+
 }
 
-func StartServerMode() {
+func StartServerMode(pem , key, ipaddressAndPort string, timeout, bufferSize uint32 ){
 
 	fmt.Println("Starting server...")
-	listener := getListenerOverTLS()
+	listener := getListenerOverTLS(pem, key, ipaddressAndPort)
 
 	manager := ClientManager{
 		clients:    make(map[*Client]bool),
@@ -48,13 +48,13 @@ func StartServerMode() {
 		}
 		client := &Client{socket: connection, data: make(chan []byte)}
 		manager.register <- client
-		go manager.receive(client)
-		go client.listenToDataChannelAndProcessMessage()
+		go manager.receive(client, bufferSize)
+		go client.listenToDataChannelAndProcessMessage(timeout)
 	}
 }
 
-func getListenerOverTLS() net.Listener{
-	cert, err := tls.LoadX509KeyPair(config.Config.Server.Certs.Directory+config.Config.Server.Certs.Pem, config.Config.Server.Certs.Directory+config.Config.Server.Certs.Key)
+func getListenerOverTLS(pem, key, ipaddressAndPort string ) net.Listener{
+	cert, err := tls.LoadX509KeyPair(pem, key)
 
 	if err != nil {
 		log.Fatal(err)
@@ -62,7 +62,7 @@ func getListenerOverTLS() net.Listener{
 
 	tlsConfig := tls.Config{Certificates: []tls.Certificate{cert}, ClientAuth: tls.RequireAnyClientCert}
 	tlsConfig.Rand = rand.Reader
-	listener, err := tls.Listen("tcp", config.Config.Server.IPAddress+config.Config.Server.Port, &tlsConfig)
+	listener, err := tls.Listen("tcp", ipaddressAndPort, &tlsConfig)
 
 	if err != nil {
 		fmt.Println(err)
@@ -87,9 +87,9 @@ func (manager *ClientManager) start() {
 	}
 }
 
-func (manager *ClientManager) receive(client *Client) {
+func (manager *ClientManager) receive(client *Client, bufferSize uint32) {
 	for {
-		message := make([]byte, config.Config.Server.Messages.BufferSize)
+		message := make([]byte, bufferSize)
 		length, err := client.socket.Read(message)
 		if err != nil {
 			manager.unregister <- client
