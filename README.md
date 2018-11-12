@@ -16,73 +16,166 @@ type Header struct {
 }
 ```
 
-Field | Description
------------- | -------------
-messageLength | The total size of the message in bytes. This total includes the 4 bytes that holds the message length
-requestID | A client or database-generated identifier that uniquely identifies this message.
-responseTo | Clients can use the requestID and the responseTo fields to associate query responses with the originating query.
-opCode | Type of message. See Request Opcodes for details.
+Type | Name | Description
+------------ | ------------- | -------------
+uint32 |messageLength | The total size of the message in bytes. This total includes the 4 bytes that holds the message length
+uint32 |requestID | A client or database-generated identifier that uniquely identifies this message.
+uint32 |responseTo | Clients can use the requestID and the responseTo fields to associate query responses with the originating query.
+uint32 |opCode | Type of message. See Request Opcodes for details.
 
 ## Request Opcodes
 Opcode Name | Value | Comment
 ------------ | ------------- | -------------
-OP_REPLY | 1 | Reply to a client request. responseTo is set.
-OP_QUERY | 100 | Query measurements by stone_id(s), fields, time and interval
-OP_UPDATE | 200 | Na
-OP_INSERT | 300 | Na
-OP_DELETE | 400 | Na
+[OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_reply) | 1 | Reply to a client request. responseTo is set.
+[OP_QUERY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_query)| 100 | Query measurements by stone_id(s), fields, time & interval
+[OP_INSERT](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_insert) | 200 | Insert measurements by stone_id, time & type + value
+[OP_DELETE](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_delete) | 300 | Delete measurements by stone_id, time & types
 
 ## Client Request Messages
 ###  OP_QUERY
 ```golang
 struct OP_QUERY {
     MsgHeader header,
-    int32     flags,
-    json   queryDetails
+    int32     flag,
+    json   payload
 }
 ```
 
-Field | Description
------------- | -------------
-header | Message header, as described in Standard Message Header.
-flags | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** - default <br>  **1** -  ...
-queryDetails| **0** - <br>type OP_QUERY struct { <br> &nbsp;&nbsp;&nbsp;&nbsp; StoneIDs &nbsp;&nbsp; []gocql.UUID &nbsp;  `json:"stoneIDs"` <br> &nbsp;&nbsp;&nbsp;&nbsp; Types &nbsp;&nbsp; &nbsp;&nbsp; []string &nbsp; &nbsp; &nbsp; `json:"types""` <br> &nbsp;&nbsp;&nbsp;&nbsp; StartTime &nbsp;&nbsp;time.Time &nbsp; &nbsp;&nbsp; `json:"startTime"` <br> &nbsp;&nbsp;&nbsp;&nbsp; EndTime &nbsp;&nbsp;&nbsp; time.Time &nbsp; &nbsp; &nbsp;`json:"endTime"` <br> &nbsp;&nbsp;&nbsp;&nbsp; Interval &nbsp;&nbsp; uint32 &nbsp; &nbsp; &nbsp; &nbsp; `json:"interval"` <br>} 
+type | Name | Description
+------------ | ------------ | -------------
+16 byte | header | Message header, as described in Standard Message Header[Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** [Select measurement payload](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#select_measurement_payload)
 
-The database will respond to an OP_QUERY message with an [OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/###OP_REPLY) message.
-			
+
+#### Select measurement payload
+```json 
+{  
+   "stoneIDs":[  
+      "bf82e78d-24a2-470d-abb8-9e0a2720619f"
+   ],
+   "types":[  
+      "w",
+      "pf",
+      "kwh"
+   ],
+   "startTime":"2018-11-12T14:01:59.1708508+01:00",
+   "endTime":"2018-11-12T14:31:59.1708508+01:00",
+   "interval":0
+}
+```
+
+#### Response select measurement payload
+```json 
+{  
+   "startTime":"2018-11-12T14:01:59.1708508+01:00",
+   "endTime":"2018-11-12T14:31:59.1708508+01:00",
+   "interval":0,
+   "stones":[  
+      {  
+         "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
+         "fields":[  
+            {  
+               "field":"w",
+               "Data":[  
+                  {  
+                     "time":"2018-11-12T13:19:55.148Z",
+                     "value":3.0233014
+                  },
+                  {  
+                     "time":"2018-11-12T13:19:55.149Z",
+                     "value":2.188571
+                  }
+               ]
+            },
+            {  
+               "field":"pf",
+               "Data":[  
+                  {  
+                     "time":"2018-11-12T13:19:55.148Z",
+                     "value":4.702545
+                  },
+                  {  
+                     "time":"2018-11-12T13:19:55.149Z",
+                     "value":2.1231875
+                  }
+               ]
+            },
+            {  
+               "field":"kwh",
+               "Data":[  
+               ]
+            }
+         ]
+      }
+   ]
+}
+```
 ###  OP_INSERT 
 ```golang
 struct OP_INSERT {
     MsgHeader header,
-    int32     flags,
-    json   queryDetails
+    int32     flag,
+    json   payload
 }
 ```
 
-Field | Description
------------- | -------------
-header | Message header, as described in Standard Message Header.
-flags | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** - default <br>  **1** -  ...
-insertDetails| **0** - <br>type OP_INSERT struct { <br> &nbsp;&nbsp;&nbsp;&nbsp; StoneID &nbsp; gocql.UUID &nbsp;`json:"stoneID"` <br> &nbsp;&nbsp;&nbsp;&nbsp; Data []struct{ <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Time&nbsp; &nbsp; &nbsp; &nbsp;  time.Time &nbsp;&nbsp; `json:"time"`<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; KWH&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;float32 &nbsp; &nbsp;&nbsp; `json:"kWh"` <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Watt &nbsp; &nbsp; &nbsp; &nbsp;float32 &nbsp; &nbsp;&nbsp; `json:"watt"` <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PowerFactor float32 &nbsp; &nbsp; &nbsp;`json:"pf"`<br> &nbsp;&nbsp;&nbsp;&nbsp; } <br>	} 
+type | Name | Description
+------------ | ------------ | -------------
+16 byte | header | Message header, as described in Standard Message Header[Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** [Insert measurement payload](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert_measurement_payload)
+
+
+#### Insert measurement payload
+```json 
+{  
+   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
+   "data":[  
+      {  
+         "time":"2018-11-12T13:54:38.5078751+01:00",
+         "kWh":3.3228004,
+         "watt":3.0233014,
+         "pf":4.702545
+      },
+      {  
+         "time":"2018-11-12T13:54:39.5078751+01:00",
+         "kWh":3.4341154
+      }
+   ]
+}
+```
+
 			
-Atm flag 2(No Content) without JSON (Maybe: There is no response to an OP_INSERT message. ) 
+The database will respond to an OP_QUERY message with an [OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_reply) message.
 
 ###  OP_DELETE
 ```golang
 struct OP_DELETE{
     MsgHeader header,
-    int32     flags,
-    json   queryDetails
+    int32     flag,
+    json   payload
 }
 ```
 
-Field | Description
------------- | -------------
-header | Message header, as described in Standard Message Header.
-flags | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** - default <br>  **1** -  ...
-deleteDetails| **0** - <br>type OP_DELETE struct { <br> &nbsp;&nbsp;&nbsp;&nbsp; StoneID &nbsp;&nbsp;&nbsp; gocql.UUID &nbsp;&nbsp;&nbsp;  `json:"stoneID"` <br> &nbsp;&nbsp;&nbsp;&nbsp; Types &nbsp;&nbsp; &nbsp;&nbsp; []string &nbsp; &nbsp; &nbsp; `json:"types""` <br> &nbsp;&nbsp;&nbsp;&nbsp; StartTime &nbsp;&nbsp;time.Time &nbsp; &nbsp;&nbsp; `json:"startTime"` <br> &nbsp;&nbsp;&nbsp;&nbsp; EndTime &nbsp;&nbsp;&nbsp; time.Time &nbsp; &nbsp; &nbsp;`json:"endTime"`  <br>} 
+type | Name | Description
+------------ | ------------ | -------------
+16 byte | header | Message header, as described in Standard Message Header[Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** [Delete measurement payload](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_measurement_payload)
 
-Atm flag 2(No Content) without JSON (Maybe: There is no response to an OP_DELETE message. )
+
+#### Delete measurement payload
+```json 
+{  
+   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
+   "types":[  
+      "w",
+      "pf",
+      "kWh"
+   ],
+   "startTime":"0001-01-01T00:00:00Z",
+   "endTime":"0001-01-01T00:00:00Z"
+}
+```
+The database will respond to an OP_QUERY message with an [OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_reply) message.
 
 ##  Database Response Messages
 ###  OP_REPLY
@@ -91,22 +184,22 @@ Atm flag 2(No Content) without JSON (Maybe: There is no response to an OP_DELETE
 struct OP_REPLY{
     MsgHeader header,
     int32     flags,
-    json   replyDetails
+    json   payload
 }
 ```
-Field | Description
------------- | -------------
-header | Message header, as described in Standard Message Header.
-flags | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** -  OK <br>  **2** -  No Content <br>  **100** -  Error
-queryDetails|  **1** - Response to an OP_QUERY  <br> type OP_INSERT struct { <br> &nbsp;&nbsp;&nbsp;&nbsp; StartTime &nbsp;&nbsp;time.Time &nbsp;`json:"startTime"` <br> &nbsp;&nbsp;&nbsp;&nbsp; EndTime &nbsp;&nbsp;&nbsp; time.Time &nbsp;`json:"endTime"` <br> &nbsp;&nbsp;&nbsp;&nbsp; Interval &nbsp; &nbsp;uint32 &nbsp; &nbsp; `json:"interval"` <br>&nbsp;&nbsp;&nbsp;&nbsp; Stones []struct { <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; StoneID&nbsp; gocql.UUID &nbsp;&nbsp;`json:"stoneID"`<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Fields &nbsp; []struct { <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;Field&nbsp;&nbsp;string &nbsp; &nbsp;&nbsp; `json:"field"`<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; Measurements[]struct{  <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Time&nbsp; &nbsp; &nbsp; &nbsp;time.Time &nbsp; &nbsp;&nbsp; `json:"time"` <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Value &nbsp;&nbsp;&nbsp;&nbsp; float32 &nbsp; &nbsp; &nbsp;&nbsp;&nbsp;`json:"value"`<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; } `json:"data"`<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; } `json:"fields"`<br> &nbsp;&nbsp;&nbsp; } `json:"stones"` <br>	}  <br> **2** - No JSON <br> **3** - See  [Error code](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/####Error_codes)
+type | Name | Description
+------------ | ------------ | -------------
+16 byte | header | Message header, as described in Standard Message Header[Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** OK (Payload depends of [Client request message](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#client-request-messages)<br> **2** No Content (No payload)<br> **100** [Error](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#error_codes)
 
-#### Error_codes
 
-```golang
-struct Error{
-    uin32 code,
-    string message
+#### Error codes
+
+```json
+{  
+   "code":100,
+   "message":"StoneID is missing"
 }
 ```
 
-see errors in model/error.go (to be continued)
+see errors in model/error.go (work in progress)
