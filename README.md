@@ -43,8 +43,8 @@ struct OP_QUERY {
 
 type | Name | Description
 ------------ | ------------ | -------------
-16 byte | header | Message header, as described in Standard Message Header[Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** [Select measurement payload](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#select_measurement_payload)
+16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** [Select measurement payload](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#select-measurement-payload)
 
 
 #### Select measurement payload
@@ -121,8 +121,8 @@ struct OP_INSERT {
 
 type | Name | Description
 ------------ | ------------ | -------------
-16 byte | header | Message header, as described in Standard Message Header[Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** [Insert measurement payload](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert_measurement_payload)
+16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** [Insert measurement payload](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert-measurement-payload)
 
 
 #### Insert measurement payload
@@ -158,8 +158,8 @@ struct OP_DELETE{
 
 type | Name | Description
 ------------ | ------------ | -------------
-16 byte | header | Message header, as described in Standard Message Header[Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** [Delete measurement payload](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_measurement_payload)
+16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **0** [Delete measurement payload](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete-measurement-payload)
 
 
 #### Delete measurement payload
@@ -189,7 +189,7 @@ struct OP_REPLY{
 ```
 type | Name | Description
 ------------ | ------------ | -------------
-16 byte | header | Message header, as described in Standard Message Header[Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
+16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
 uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** OK (Payload depends of [Client request message](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#client-request-messages)<br> **2** No Content (No payload)<br> **100** [Error](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#error_codes)
 
 
