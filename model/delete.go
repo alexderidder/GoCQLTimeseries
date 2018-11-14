@@ -5,7 +5,7 @@ import (
 )
 
 type DeleteJSON struct {
-	StoneID   JSONUUID `json:"stoneIDs"`
+	StoneID   JSONUUID `json:"stoneID"`
 	Types     []string   `json:"types"`
 	StartTime time.Time  `json:"startTime"`
 	EndTime   time.Time  `json:"endTime"`

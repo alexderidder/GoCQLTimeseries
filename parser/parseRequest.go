@@ -31,6 +31,7 @@ func ParseOpCode(opCode uint32, message []byte) []byte {
 }
 
 func parser(c Command) []byte {
+
 	err := c.parseFlag()
 	if !err {
 		return model.Error{0, "Flag doesn't exist"}.MarshallErrorAndAddFlag()

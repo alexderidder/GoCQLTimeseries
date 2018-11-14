@@ -28,7 +28,7 @@ func (h *Header) makeHeader() []byte {
 func ByteToArray(request []byte) (Header) {
 	result := make([]uint32, 4)
 	for i := 0; i < 4; i++ {
-		result[i] = ByteToInt(request, i*4)
+		result[i] = ByteToUint32(request, i*4)
 	}
 
 	return Header{result[0], result[1], result[2], result[3]}
@@ -47,14 +47,18 @@ func (h *Header) CheckHeader() Error{
 	return Null
 }
 
-func ByteToInt(request []byte, beginIndex int) uint32 {
-	var result uint32
-	result |= uint32(request[beginIndex])
-	beginIndex++
-	result |= uint32(request[beginIndex]) << 8
-	beginIndex++
-	result |= uint32(request[beginIndex]) << 16
-	beginIndex++
-	result |= uint32(request[beginIndex]) << 24
-	return result
+func ByteToUint32(request []byte, beginIndex int) uint32 {
+	if len(request) >= beginIndex + 4 {
+		var result uint32
+		result |= uint32(request[beginIndex])
+		beginIndex++
+		result |= uint32(request[beginIndex]) << 8
+		beginIndex++
+		result |= uint32(request[beginIndex]) << 16
+		beginIndex++
+		result |= uint32(request[beginIndex]) << 24
+		return result
+	}
+	return 0
+
 }

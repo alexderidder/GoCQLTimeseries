@@ -16,16 +16,17 @@ type Delete struct {
 
 
 func (d Delete) parseFlag() bool {
-	flag := model.ByteToInt(d.message, 0)
+	flag := model.ByteToUint32(d.message, 0)
 	switch flag {
 	case 1:
+		d.message = d.message[4:]
 		return true
 	default:
 		return false
 	}
 }
 func (d Delete) parseJSON() bool {
-	err := json.Unmarshal(d.message[4:], &d.request)
+	err := json.Unmarshal(d.message, &d.request)
 	if err != nil {
 		return false
 	}
@@ -34,11 +35,11 @@ func (d Delete) parseJSON() bool {
 func (d Delete) checkParameters() model.Error {
 
 	if !d.request.StoneID.Valid {
-		return model.Error{100, "StoneID is missing"}
+		return model.MissingStoneID
 	}
 
 	if len(d.request.Types) == 0 {
-		return model.Error{100, "Type is missing"}
+		return model.MissingType
 	}
 	d.request.Types = checkUnknownAndDuplicatedTypes(d.request.Types)
 
