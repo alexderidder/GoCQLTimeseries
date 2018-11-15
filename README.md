@@ -3,9 +3,74 @@
 
 Save kWh, wattage & power factor using websockets and GoCQL
 
-## Usage
+# Setup
 
-Send messages according protocol below
+# Install Go
+https://golang.org/doc/install 
+
+Set this repo in $HOME/go/src/
+## Get libraries
+```
+go get github.com/alexderidder/GoCQLTimeseries 
+```
+```
+go get github.com/gocql/gocql 
+```
+```
+go get github.com/stretchr/testify
+```
+
+# Install Cassandra
+http://cassandra.apache.org/download/
+
+## Run Cassandra
+In your cassandra folder run file 'bin/cassandra.exe'
+
+## Run cqlsh
+In your cassandra folder run file 'bin/cqlsh.exe'
+
+### Create keyspace 
+In the cqlsh window
+```
+CREATE KEYSPACE crownstone
+  WITH REPLICATION = { 
+   'class' : 'SimpleStrategy', 
+   'replication_factor' : 1 
+  };
+```
+
+### Create tables
+In the cqlsh window
+``` 
+  CREATE TABLE cronwstone.kwh_by_id_and_time ( 
+    id UUID,
+    time timestamp,
+    kwh float,
+, PRIMARY KEY ((id), time)	
+);
+```
+
+```
+CREATE TABLE crownstone.w_and_pf_by_id_and_time ( 
+    id UUID,
+    time timestamp,
+    w float,
+	pf float
+, PRIMARY KEY ((id), time)	
+);
+```
+
+# Create SSL Certificates(key / cert)
+https://medium.com/the-new-control-plane/generating-self-signed-certificates-on-windows-7812a600c2d8
+
+# Run sockets
+ 
+## Setup config file
+Edit conf.json to your setup
+
+## Run server
+go run main.go --mode server
+
 
 ## Standard Message Header
 In general, each message consists of a standard message header followed by request-specific data. The standard message header is structured as follows:
