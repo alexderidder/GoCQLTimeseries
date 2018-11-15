@@ -52,5 +52,5 @@ func Insert(i *model.InsertJSON) model.Error {
 	if err != nil {
 		return model.Error{100, err.Error()}
 	}
-	return model.Null
+	return model.NoError
 }

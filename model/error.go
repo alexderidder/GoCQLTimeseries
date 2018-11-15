@@ -11,7 +11,9 @@ type Error struct {
 }
 
 var (
-	Null           = Error{0, ""}
+	NoError        = Error{0, ""}
+	FlagNoExist    = Error{0, "Flag doesn't exists"}
+	ErrorMarshal   = Error{0, "Problem with parsing/marshall JSON"}
 	MissingStoneID = Error{100, "StoneID is missing"}
 	MissingType    = Error{100, "Type is missing"}
 	MissingData    = Error{100, "Data is missing"}

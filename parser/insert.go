@@ -8,42 +8,60 @@ import (
 )
 
 type Insert struct {
+	flag []byte
 	message []byte
 	request *model.InsertJSON
 }
 
-func (i Insert) parseFlag() bool {
-	flag := model.ByteToUint32(i.message, 0)
+type InsertFlag1 struct {
+	insert *Insert
+}
+
+
+func (i Insert) parseFlag() []byte {
+	flag := model.ByteToUint32(i.flag, 0)
 	switch flag {
 	case 1:
-		i.message = i.message[4:]
-		return true
+		return i.executeMethodsPerFlag(InsertFlag1{&i})
 	default:
-		return false
+		return model.FlagNoExist.MarshallErrorAndAddFlag()
 	}
 }
-func (i Insert) parseJSON() bool {
-	err := json.Unmarshal(i.message, &i.request)
+
+func (i Insert) executeMethodsPerFlag(test2 FlagMethods) []byte {
+
+	if !test2.marshalBytes() {
+		return model.ErrorMarshal.MarshallErrorAndAddFlag()
+	}
+	error := test2.checkParameters()
+	if !error.IsNull(){
+		return error.MarshallErrorAndAddFlag()
+	}
+	return test2.databaseInteraction()
+}
+
+func (i InsertFlag1) marshalBytes() bool {
+	err := json.Unmarshal(i.insert.message, &i.insert.request)
 	if err != nil {
 		return false
 	}
 	return true
 }
-func (i Insert) checkParameters() model.Error {
+func (i InsertFlag1) checkParameters() model.Error {
 
-	if !i.request.StoneID.Valid {
+	if !i.insert.request.StoneID.Valid {
 		return model.MissingStoneID
 	}
 
-	if len(i.request.Data) == 0 {
+	if len(i.insert.request.Data) == 0 {
 		return model.MissingData
 	}
 
-	return model.Null
+	return model.NoError
 }
 
-func (i Insert) parseJSONToDatabaseQueries() []byte {
-	err := database.Insert(i.request)
+func (i InsertFlag1) databaseInteraction() []byte {
+	err := database.Insert(i.insert.request)
 	if !err.IsNull() {
 		return err.MarshallErrorAndAddFlag()
 	}

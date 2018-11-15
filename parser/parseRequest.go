@@ -6,23 +6,27 @@ import (
 )
 
 type Command interface {
-	parseFlag() bool
-	parseJSON() bool
-	checkParameters() model.Error
-	parseJSONToDatabaseQueries() []byte
+	parseFlag() []byte
+	executeMethodsPerFlag(FlagMethods) []byte
 }
 
-func ParseOpCode(opCode uint32, message []byte) []byte {
+type FlagMethods interface {
+	marshalBytes() bool
+	checkParameters() model.Error
+	databaseInteraction() []byte
+}
+
+func ProcessOpCodeAndReceivedMessage(opCode uint32, message []byte) []byte {
 	switch opCode {
 	//TODO: insert
 	case 100:
-		i := Insert{message, &model.InsertJSON{}}
+		i := Insert{message[:4],message[4:], &model.InsertJSON{}}
 		return parser(i)
 	case 200:
-		s := Get{message, &model.RequestSelectJSON{}}
+		s := Get{message[:4],message[4:], &model.RequestSelectJSON{}}
 		return parser(s)
 	case 500:
-		d := Delete{message, &model.DeleteJSON{}}
+		d := Delete{message[:4],message[4:], &model.DeleteJSON{}}
 		return parser(d)
 		//TODO: Research delete management
 	default:
@@ -32,21 +36,7 @@ func ParseOpCode(opCode uint32, message []byte) []byte {
 
 func parser(c Command) []byte {
 
-	err := c.parseFlag()
-	if !err {
-		return model.Error{0, "Flag doesn't exist"}.MarshallErrorAndAddFlag()
-	}
-	err = c.parseJSON()
-	if !err {
-		return model.Error{0, "Problem with parsing JSON"}.MarshallErrorAndAddFlag()
-	}
-	errBytes := c.checkParameters()
-	if !errBytes.IsNull() {
-		return errBytes.MarshallErrorAndAddFlag()
-	}
-
-	result := c.parseJSONToDatabaseQueries()
-	return result
+	return c.parseFlag()
 }
 
 func checkUnknownAndDuplicatedTypes(request []string) ([]string) {

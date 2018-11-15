@@ -78,7 +78,7 @@ func Select(s *model.RequestSelectJSON ) (model.ResponseSelectJSON, model.Error)
 		}
 		response.Stones = append(response.Stones, stone)
 	}
-	return response, model.Null
+	return response, model.NoError
 
 }
 

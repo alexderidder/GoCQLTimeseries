@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 )
 
-
 const (
 	UnitW      string = "w"
 	Unitpf     string = "pf"
@@ -16,46 +15,59 @@ const (
 )
 
 type Get struct {
-	message    []byte
-	request		*model.RequestSelectJSON
+	flag []byte
+	message []byte
+	request *model.RequestSelectJSON
 }
 
+type GetFlag1 struct {
+	get *Get
+}
 
-
-
-func (g Get) parseFlag() bool {
-	flag := model.ByteToUint32(g.message, 0)
+func (g Get) parseFlag() []byte {
+	flag := model.ByteToUint32(g.flag, 0)
 	switch flag {
 	case 1:
-		g.message = g.message[4:]
-		return true
+		return g.executeMethodsPerFlag(GetFlag1{&g})
 	default:
-		return false
+		return  model.FlagNoExist.MarshallErrorAndAddFlag()
 	}
 }
-func (g Get) parseJSON() bool {
-	err := json.Unmarshal(g.message, &g.request)
+
+func (g Get) executeMethodsPerFlag(test2 FlagMethods) []byte {
+
+	if !test2.marshalBytes() {
+		return model.ErrorMarshal.MarshallErrorAndAddFlag()
+	}
+	error := test2.checkParameters()
+	if !error.IsNull(){
+		return error.MarshallErrorAndAddFlag()
+	}
+	return test2.databaseInteraction()
+}
+func (g GetFlag1) marshalBytes() bool {
+	err := json.Unmarshal(g.get.message, &g.get.request)
 	if err != nil {
 		return false
 	}
 	return true
 }
-func (g Get) checkParameters() model.Error {
+func (g GetFlag1) checkParameters() model.Error {
 
-	if len(g.request.StoneIDs) == 0{
+	if len(g.get.request.StoneIDs) == 0 {
 		return model.MissingStoneID
 	}
 
-	if len(g.request.Types) == 0 {
+	if len(g.get.request.Types) == 0 {
 		return model.MissingType
 	}
-	g.request.Types = checkUnknownAndDuplicatedTypes(g.request.Types)
+	g.get.request.Types = checkUnknownAndDuplicatedTypes(g.get.request.Types)
 
-	return model.Null
+	return model.NoError
 }
 
-func (g Get) parseJSONToDatabaseQueries() []byte {
-	response, err := database.Select(g.request)
+func (g GetFlag1) databaseInteraction() []byte {
+	response, err := database.Select(g.get.request)
 	if !err.IsNull() {
 		return err.MarshallErrorAndAddFlag()
 	}
@@ -69,5 +81,3 @@ func (g Get) parseJSONToDatabaseQueries() []byte {
 	binary.LittleEndian.PutUint32(resultCode, 1)
 	return append(resultCode, responseBytes...)
 }
-
-

@@ -10,17 +10,17 @@ import (
 
 func TestMakeHeader(t *testing.T) {
 	header := Header{1,1,1,1}
-	assert.Equal(t, []byte{1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},  header.makeHeader(), "Check if header object is correctly transfered to bytes")
+	assert.Equal(t, []byte{1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},  header.MakeHeader(), "Check if header object is correctly transfered to bytes")
 	header = Header{128,128,128,128}
-	assert.Equal(t, []byte{128, 0, 0, 0, 128, 0, 0, 0, 128, 0, 0, 0, 128, 0, 0, 0},  header.makeHeader(), "Check if header object is correctly transfered to bytes")
+	assert.Equal(t, []byte{128, 0, 0, 0, 128, 0, 0, 0, 128, 0, 0, 0, 128, 0, 0, 0},  header.MakeHeader(), "Check if header object is correctly transfered to bytes")
 
 }
 
 func TestByteToArray(t *testing.T) {
 	bytes := []byte{1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0}
-	assert.Equal(t, Header{1,1,1,1} ,  ByteToArray(bytes), "Check if bytes is correctly transfered is header")
+	assert.Equal(t, Header{1,1,1,1} ,  BytesToHeader(bytes), "Check if bytes is correctly transfered is header")
 	bytes = []byte{128, 0, 0, 0, 128, 0, 0, 0, 128, 0, 0, 0, 128, 0, 0, 0}
-	assert.Equal(t, Header{128,128,128,128},   ByteToArray(bytes), "Check if bytes is correctly transfered is header")
+	assert.Equal(t, Header{128,128,128,128},   BytesToHeader(bytes), "Check if bytes is correctly transfered is header")
 
 }
 

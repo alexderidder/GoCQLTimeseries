@@ -6,7 +6,7 @@ type Header struct {
 	MessageLength, RequestID, ResponseID, OpCode uint32
 }
 
-func (h *Header) makeHeader() []byte {
+func (h *Header) MakeHeader() []byte {
 	var requestHeader []byte
 	//Request headers
 	variable := make([]byte, 4)
@@ -25,7 +25,7 @@ func (h *Header) makeHeader() []byte {
 	return requestHeader
 }
 
-func ByteToArray(request []byte) (Header) {
+func BytesToHeader(request []byte) (Header) {
 	result := make([]uint32, 4)
 	for i := 0; i < 4; i++ {
 		result[i] = ByteToUint32(request, i*4)
@@ -44,7 +44,7 @@ func (h *Header) CheckHeader() Error{
 	if h.OpCode == 0 {
 	return Error{2, "Header doesn't contain opCode"}
 	}
-	return Null
+	return NoError
 }
 
 func ByteToUint32(request []byte, beginIndex int) uint32 {

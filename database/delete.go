@@ -45,7 +45,7 @@ Skip:
 			return error
 		}
 	}
-	return model.Null
+	return model.NoError
 }
 
 func selectAndInsert(selectQuery string, insertQuery string, values []interface{}) model.Error {
@@ -81,5 +81,5 @@ func selectAndInsert(selectQuery string, insertQuery string, values []interface{
 			return model.Error{100, err.Error()}
 		}
 	}
-	return model.Null
+	return model.NoError
 }
