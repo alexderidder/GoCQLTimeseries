@@ -20,36 +20,10 @@ http://cassandra.apache.org/download/
 In your cassandra folder run file 'bin/cassandra.exe'
  ## Run cqlsh
 In your cassandra folder run file 'bin/cqlsh.exe'
- ### Create keyspace 
-In the cqlsh window
+ ### Setup Cassandra tables
 ```
-CREATE KEYSPACE crownstone
-  WITH REPLICATION = { 
-   'class' : 'SimpleStrategy', 
-   'replication_factor' : 1 
-  };
+ run setup.sh
 ```
- ### Create tables
-In the cqlsh window
-``` 
-  CREATE TABLE cronwstone.kwh_by_id_and_time ( 
-    id UUID,
-    time timestamp,
-    kwh float,
-, PRIMARY KEY ((id), time)	
-);
-```
- ```
-CREATE TABLE crownstone.w_and_pf_by_id_and_time ( 
-    id UUID,
-    time timestamp,
-    w float,
-	pf float
-, PRIMARY KEY ((id), time)	
-);
-```
- # Create SSL Certificates(key / cert)
-https://medium.com/the-new-control-plane/generating-self-signed-certificates-on-windows-7812a600c2d8
  # Run sockets
  
 ## Setup config file
