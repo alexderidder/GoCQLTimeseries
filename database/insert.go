@@ -1,8 +1,8 @@
 package database
 
 import (
-	"CrownstoneServer/model"
-	"CrownstoneServer/server"
+	"github.com/alexderidder/GoCQLTimeseries/model"
+	"github.com/alexderidder/GoCQLTimeseries/server"
 	"github.com/gocql/gocql"
 )
 
@@ -16,12 +16,12 @@ func Insert(i *model.InsertJSON) model.Error {
 
 		if data.Watt.Valid {
 			if data.PowerFactor.Valid {
-				batch.Query("INSERT INTO w_and_pw_by_id_and_time (id, time, w, pf) VALUES (?, ?, ?, ?)", i.StoneID.Value, data.Time, data.Watt.Value, data.PowerFactor.Value)
+				batch.Query("INSERT INTO w_and_pf_by_id_and_time (id, time, w, pf) VALUES (?, ?, ?, ?)", i.StoneID.Value, data.Time, data.Watt.Value, data.PowerFactor.Value)
 			} else {
-				batch.Query("INSERT INTO w_and_pw_by_id_and_time (id, time, w) VALUES (?, ?, ?)", i.StoneID.Value, data.Time, data.Watt.Value)
+				batch.Query("INSERT INTO w_and_pf_by_id_and_time (id, time, w) VALUES (?, ?, ?)", i.StoneID.Value, data.Time, data.Watt.Value)
 			}
 		} else if data.PowerFactor.Valid {
-			batch.Query("INSERT INTO w_and_pw_by_id_and_time (id, time, pf) VALUES (?, ?, ?)", i.StoneID.Value, data.Time, data.PowerFactor.Value)
+			batch.Query("INSERT INTO w_and_pf_by_id_and_time (id, time, pf) VALUES (?, ?, ?)", i.StoneID.Value, data.Time, data.PowerFactor.Value)
 		} else {
 
 		}
@@ -49,6 +49,10 @@ func Insert(i *model.InsertJSON) model.Error {
 		}
 	}
 	err = server.DbConn.Session.ExecuteBatch(batch)
+	if err != nil {
+		return model.Error{100, err.Error()}
+	}
+	err = server.DbConn.Session.ExecuteBatch(batch2)
 	if err != nil {
 		return model.Error{100, err.Error()}
 	}

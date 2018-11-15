@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"CrownstoneServer/model"
+	"github.com/alexderidder/GoCQLTimeseries/model"
 	"strings"
 )
 

@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"CrownstoneServer/database"
-	"CrownstoneServer/model"
+	"github.com/alexderidder/GoCQLTimeseries/database"
+	"github.com/alexderidder/GoCQLTimeseries/model"
 	"encoding/binary"
 	"encoding/json"
 )

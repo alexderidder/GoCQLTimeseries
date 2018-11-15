@@ -1,8 +1,8 @@
 package database
 
 import (
-	"CrownstoneServer/model"
-	"CrownstoneServer/server"
+	"github.com/alexderidder/GoCQLTimeseries/model"
+	"github.com/alexderidder/GoCQLTimeseries/server"
 	"github.com/gocql/gocql"
 	"log"
 	"time"
@@ -33,7 +33,7 @@ func Delete(d *model.DeleteJSON) (model.Error) {
 	}
 	values = "UPDATE w_and_pw_by_id_and_time SET " + values + " WHERE id = ? AND time = ?"
 
-	error = selectAndInsert("SELECT time FROM w_and_pw_by_id_and_time WHERE id = ?"+queryTimePart, values, timeValues)
+	error = selectAndInsert("SELECT time FROM w_and_pf_by_id_and_time WHERE id = ?"+queryTimePart, values, timeValues)
 	if !error.IsNull() {
 		return error
 	}

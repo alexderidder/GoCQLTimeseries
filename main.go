@@ -8,24 +8,6 @@ import (
 	"os"
 )
 
-func main() {
-	var config Configuration
-	file, _ := os.Open("conf.json")
-	defer file.Close()
-	decoder := json.NewDecoder(file)
-	config = Configuration{}
-	err := decoder.Decode(&config)
-	if err != nil {
-		fmt.Println("Error parsing server config:", err)
-		os.Exit(0)
-	}
-
-	go server.ConnectCassandra(config.Database.IPAddresses, config.Database.Keyspace, int(config.Database.BatchSize), int(config.Database.ReconnectTime) )
-
-	defer server.DbConn.Session.Close()
-	connector.StartServerMode(config.Server.Certs.Directory + config.Server.Certs.Pem, config.Server.Certs.Directory + config.Server.Certs.Key, config.Server.IPAddress + config.Server.Port, config.Server.Messages.Timeout,  config.Server.Messages.BufferSize)
-}
-
 type Configuration struct {
 	Server struct {
 		IPAddress string `json:"ip-address"`
@@ -41,9 +23,50 @@ type Configuration struct {
 		} `json:"messages"`
 	} `json:"server"`
 	Database struct {
-		IPAddresses []string `json:"ip-addresses"`
-		Keyspace      string `json:"keyspace"`
-		ReconnectTime uint32    `json:"reconnect_time"`
-		BatchSize uint32 `json:"batch_size"`
+		IPAddresses   []string `json:"ip-addresses"`
+		Keyspace      string   `json:"keyspace"`
+		ReconnectTime uint32   `json:"reconnect_time"`
+		BatchSize     uint32   `json:"batch_size"`
 	} `json:"database"`
 }
+
+
+func main() {
+	config := readConfigFile()
+
+	go connectCassandra(config)
+	defer server.DbConn.Session.Close()
+	startTLSServer(config)
+}
+
+func connectCassandra(config Configuration){
+	ipAddresses := config.Database.IPAddresses
+	keyspace := config.Database.Keyspace
+	batchSize := int(config.Database.BatchSize)
+	reconnectTime:= int(config.Database.ReconnectTime)
+	server.ConnectCassandra(ipAddresses, keyspace, batchSize, reconnectTime)
+}
+
+func readConfigFile() Configuration {
+	var config Configuration
+	file, _ := os.Open("conf.json")
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	config = Configuration{}
+	err := decoder.Decode(&config)
+	if err != nil {
+		fmt.Println("Error parsing server config:", err)
+		os.Exit(0)
+	}
+	return config
+}
+
+func startTLSServer(config Configuration){
+	key := config.Server.Certs.Directory + config.Server.Certs.Pem
+	cert := config.Server.Certs.Directory + config.Server.Certs.Key
+	hostAndPort := config.Server.IPAddress + config.Server.Port
+	timeOut := config.Server.Messages.Timeout
+	bufferSize := config.Server.Messages.BufferSize
+	connector.StartServerMode(key, cert, hostAndPort, timeOut, bufferSize)
+}
+

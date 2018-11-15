@@ -1,8 +1,8 @@
 package connector
 
 import (
-	"CrownstoneServer/model"
-	"CrownstoneServer/parser"
+	"github.com/alexderidder/GoCQLTimeseries/model"
+	"github.com/alexderidder/GoCQLTimeseries/parser"
 	"fmt"
 	"time"
 )
@@ -66,7 +66,7 @@ func (client *Client) listenToDataChannelAndProcessMessage(timeout uint32)  {
 
 func (client *Client) writeJsonResponse(requestID uint32, responseWithoutHeader []byte) {
 	header := model.Header{uint32(len(responseWithoutHeader)+16), 0, requestID, 1}
-
+	fmt.Println(header)
 	request := append(header.MakeHeader(), responseWithoutHeader...)
 	_, err := client.socket.Write(request)
 	if err != nil {

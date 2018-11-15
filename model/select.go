@@ -27,7 +27,7 @@ type Stone struct {
 
 type Field struct {
 	Field string `json:"field"`
-	Data  []Data `json:"Data"`
+	Data  []Data `json:"data"`
 }
 
 type Data struct {

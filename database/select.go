@@ -1,8 +1,8 @@
 package database
 
 import (
-	"CrownstoneServer/model"
-	"CrownstoneServer/server"
+	"github.com/alexderidder/GoCQLTimeseries/model"
+	"github.com/alexderidder/GoCQLTimeseries/server"
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
@@ -32,7 +32,7 @@ func Select(s *model.RequestSelectJSON ) (model.ResponseSelectJSON, model.Error)
 
 		switch s.Types[0] {
 		case model.UnitWAndpf:
-			iterator = server.DbConn.Session.Query("SELECT time, " + model.UnitW + ", " + model.Unitpf + " FROM w_and_pw_by_id_and_time WHERE id = ?" + timeQuery ,  queryValues...).Iter()
+			iterator = server.DbConn.Session.Query("SELECT time, " + model.UnitW + ", " + model.Unitpf + " FROM w_and_pf_by_id_and_time WHERE id = ?" + timeQuery ,  queryValues...).Iter()
 			var timeOfRow time.Time
 			var w, pf *float32
 			var wList, pfList []model.Data
@@ -51,14 +51,14 @@ func Select(s *model.RequestSelectJSON ) (model.ResponseSelectJSON, model.Error)
 			stone.Fields = append(stone.Fields, model.Field{ model.UnitW, wList})
 			stone.Fields = append(stone.Fields,  model.Field{ model.Unitpf, pfList})
 		case  model.UnitW:
-			iterator = server.DbConn.Session.Query("SELECT time, " + model.UnitW + " FROM w_and_pw_by_id_and_time WHERE id = ?" + timeQuery,  queryValues...).Iter()
+			iterator = server.DbConn.Session.Query("SELECT time, " + model.UnitW + " FROM w_and_pf_by_id_and_time WHERE id = ?" + timeQuery,  queryValues...).Iter()
 			measurements, err := iterateStreamWithOneFloat32PerRow(iterator, s.Interval)
 			if err != nil {
 				return response, model.Error{300, err.Error()}
 			}
 			stone.Fields = append(stone.Fields, model.Field{model.UnitW, measurements})
 		case  model.Unitpf:
-			iterator = server.DbConn.Session.Query("SELECT time, " + model.Unitpf + " FROM w_and_pw_by_id_and_time WHERE id = ?" + timeQuery,  queryValues...).Iter()
+			iterator = server.DbConn.Session.Query("SELECT time, " + model.Unitpf + " FROM w_and_pf_by_id_and_time WHERE id = ?" + timeQuery,  queryValues...).Iter()
 			measurements, err := iterateStreamWithOneFloat32PerRow(iterator, s.Interval)
 			if err != nil {
 				return response, model.Error{300, err.Error()}
@@ -78,6 +78,7 @@ func Select(s *model.RequestSelectJSON ) (model.ResponseSelectJSON, model.Error)
 		}
 		response.Stones = append(response.Stones, stone)
 	}
+	fmt.Println(response)
 	return response, model.NoError
 
 }
