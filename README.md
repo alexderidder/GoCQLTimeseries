@@ -6,7 +6,9 @@ Save kWh, wattage & power factor using websockets and GoCQL
 # Setup
  # Install Go
 https://golang.org/doc/install 
- Set this repo in $HOME/go/src/
+
+Setup go path 
+https://github.com/golang/go/wiki/SettingGOPATH
 ## Get libraries
 ```
 go get github.com/gocql/gocql 
