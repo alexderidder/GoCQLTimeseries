@@ -1,12 +1,12 @@
 package database
 
 import (
-	"github.com/alexderidder/GoCQLTimeseries/model"
-	"github.com/alexderidder/GoCQLTimeseries/server"
+	"../model"
+	"../server"
 	"github.com/gocql/gocql"
 )
 
-func Insert(i model.InsertJSON) model.Error {
+func Insert(i *model.InsertJSON) model.Error {
 
 	batch := server.DbConn.Session.NewBatch(gocql.LoggedBatch)
 	batch2 :=  server.DbConn.Session.NewBatch(gocql.LoggedBatch)
@@ -49,10 +49,6 @@ func Insert(i model.InsertJSON) model.Error {
 		}
 	}
 	err = server.DbConn.Session.ExecuteBatch(batch)
-	if err != nil {
-		return model.Error{100, err.Error()}
-	}
-	err = server.DbConn.Session.ExecuteBatch(batch2)
 	if err != nil {
 		return model.Error{100, err.Error()}
 	}

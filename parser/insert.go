@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"github.com/alexderidder/GoCQLTimeseries/database"
-	"github.com/alexderidder/GoCQLTimeseries/model"
+	"../database"
+	"../model"
 	"encoding/binary"
 	"encoding/json"
 )
@@ -10,7 +10,7 @@ import (
 type Insert struct {
 	flag []byte
 	message []byte
-	request model.InsertJSON
+	request *model.InsertJSON
 }
 
 type InsertFlag1 struct {

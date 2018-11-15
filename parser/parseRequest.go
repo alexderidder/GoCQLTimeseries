@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/alexderidder/GoCQLTimeseries/model"
+	"../model"
 	"strings"
 )
 
@@ -20,13 +20,13 @@ func ProcessOpCodeAndReceivedMessage(opCode uint32, message []byte) []byte {
 	switch opCode {
 	//TODO: insert
 	case 100:
-		i := Insert{message[:4],message[4:], model.InsertJSON{}}
+		i := Insert{message[:4],message[4:], &model.InsertJSON{}}
 		return parser(i)
 	case 200:
-		s := Get{message[:4],message[4:], model.RequestSelectJSON{}}
+		s := Get{message[:4],message[4:], &model.RequestSelectJSON{}}
 		return parser(s)
 	case 500:
-		d := Delete{message[:4],message[4:], model.DeleteJSON{}}
+		d := Delete{message[:4],message[4:], &model.DeleteJSON{}}
 		return parser(d)
 		//TODO: Research delete management
 	default:

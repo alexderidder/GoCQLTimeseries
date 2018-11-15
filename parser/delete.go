@@ -1,16 +1,18 @@
 package parser
 
 import (
-	"github.com/alexderidder/GoCQLTimeseries/database"
-	"github.com/alexderidder/GoCQLTimeseries/model"
+	"../database"
+	"../model"
 	"encoding/binary"
 	"encoding/json"
 )
 
+
+
 type Delete struct {
 	flag []byte
 	message    []byte
-	request model.DeleteJSON
+	request *model.DeleteJSON
 }
 
 type DeleteFlag1 struct {

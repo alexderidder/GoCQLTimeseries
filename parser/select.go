@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"github.com/alexderidder/GoCQLTimeseries/database"
-	"github.com/alexderidder/GoCQLTimeseries/model"
+	"../database"
+	"../model"
 	"encoding/binary"
 	"encoding/json"
 )
@@ -17,7 +17,7 @@ const (
 type Get struct {
 	flag []byte
 	message []byte
-	request model.RequestSelectJSON
+	request *model.RequestSelectJSON
 }
 
 type GetFlag1 struct {

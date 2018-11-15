@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/alexderidder/GoCQLTimeseries/model"
+	"CrownstoneServer/model"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

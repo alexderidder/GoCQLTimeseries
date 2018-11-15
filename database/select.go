@@ -1,15 +1,15 @@
 package database
 
 import (
-	"github.com/alexderidder/GoCQLTimeseries/model"
-	"github.com/alexderidder/GoCQLTimeseries/server"
+	"../model"
+	"../server"
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
 	"time"
 )
 
-func Select(s model.RequestSelectJSON ) (model.ResponseSelectJSON, model.Error) {
+func Select(s *model.RequestSelectJSON ) (model.ResponseSelectJSON, model.Error) {
 	response := model.ResponseSelectJSON{s.StartTime, s.EndTime, s.Interval, []model.Stone{}}
 
 	var timeValues []interface{}
@@ -78,7 +78,6 @@ func Select(s model.RequestSelectJSON ) (model.ResponseSelectJSON, model.Error) 
 		}
 		response.Stones = append(response.Stones, stone)
 	}
-	fmt.Println(response)
 	return response, model.NoError
 
 }

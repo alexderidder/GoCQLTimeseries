@@ -1,14 +1,14 @@
 package database
 
 import (
-	"github.com/alexderidder/GoCQLTimeseries/model"
-	"github.com/alexderidder/GoCQLTimeseries/server"
+	"../model"
+	"../server"
 	"github.com/gocql/gocql"
 	"log"
 	"time"
 )
 
-func Delete(d model.DeleteJSON) (model.Error) {
+func Delete(d *model.DeleteJSON) (model.Error) {
 
 	var queryTimePart string
 	var timeValues []interface{}
@@ -31,7 +31,7 @@ func Delete(d model.DeleteJSON) (model.Error) {
 	default:
 		goto Skip
 	}
-	values = "UPDATE w_and_pw_by_id_and_time SET " + values + " WHERE id = ? AND time = ?"
+	values = "UPDATE w_and_pf_by_id_and_time SET " + values + " WHERE id = ? AND time = ?"
 
 	error = selectAndInsert("SELECT time FROM w_and_pf_by_id_and_time WHERE id = ?"+queryTimePart, values, timeValues)
 	if !error.IsNull() {
