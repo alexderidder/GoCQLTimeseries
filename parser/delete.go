@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 )
 
-
-
 type Delete struct {
 	flag []byte
 	message    []byte
