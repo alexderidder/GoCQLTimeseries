@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func Delete(d *model.DeleteJSON) (model.Error) {
+func Delete(d model.DeleteJSON) (model.Error) {
 
 	var queryTimePart string
 	var timeValues []interface{}

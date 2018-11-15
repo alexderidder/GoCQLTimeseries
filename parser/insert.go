@@ -10,7 +10,7 @@ import (
 type Insert struct {
 	flag []byte
 	message []byte
-	request *model.InsertJSON
+	request model.InsertJSON
 }
 
 type InsertFlag1 struct {

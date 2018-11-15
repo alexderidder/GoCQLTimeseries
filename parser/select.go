@@ -17,7 +17,7 @@ const (
 type Get struct {
 	flag []byte
 	message []byte
-	request *model.RequestSelectJSON
+	request model.RequestSelectJSON
 }
 
 type GetFlag1 struct {

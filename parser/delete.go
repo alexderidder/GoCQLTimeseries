@@ -12,7 +12,7 @@ import (
 type Delete struct {
 	flag []byte
 	message    []byte
-	request *model.DeleteJSON
+	request model.DeleteJSON
 }
 
 type DeleteFlag1 struct {

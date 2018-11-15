@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func Select(s *model.RequestSelectJSON ) (model.ResponseSelectJSON, model.Error) {
+func Select(s model.RequestSelectJSON ) (model.ResponseSelectJSON, model.Error) {
 	response := model.ResponseSelectJSON{s.StartTime, s.EndTime, s.Interval, []model.Stone{}}
 
 	var timeValues []interface{}

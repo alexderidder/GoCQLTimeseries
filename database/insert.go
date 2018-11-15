@@ -6,7 +6,7 @@ import (
 	"github.com/gocql/gocql"
 )
 
-func Insert(i *model.InsertJSON) model.Error {
+func Insert(i model.InsertJSON) model.Error {
 
 	batch := server.DbConn.Session.NewBatch(gocql.LoggedBatch)
 	batch2 :=  server.DbConn.Session.NewBatch(gocql.LoggedBatch)
