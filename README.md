@@ -55,9 +55,9 @@ uint32 |opCode | Type of message. See Request Opcodes for details.
 Opcode Name | Value | Comment
 ------------ | ------------- | -------------
 [OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_reply) | 1 | Reply to a client request. responseTo is set.
-[OP_QUERY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_query)| 100 | Query measurements by stone_id(s), fields, time & interval
-[OP_INSERT](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_insert) | 200 | Insert measurements by stone_id, time & type + value
-[OP_DELETE](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_delete) | 300 | Delete measurements by stone_id, time & types
+[OP_QUERY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_query)| 200 | Query measurements by stone_id(s), fields, time & interval
+[OP_INSERT](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_insert) | 100 | Insert measurements by stone_id, time & type + value
+[OP_DELETE](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_delete) | 500 | Delete measurements by stone_id, time & types
 
 ## Client Request Messages
 ###  OP_QUERY
@@ -98,7 +98,7 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
    "startTime":"2018-11-12T14:01:59.1708508+01:00",
    "endTime":"2018-11-12T14:31:59.1708508+01:00",
    "interval":0,
-   "stones":[  
+   "stones":[  //required
       {  
          "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
          "fields":[  
@@ -156,7 +156,7 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 #### Insert measurement payload
 ```json 
 {  
-   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
+   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f", //required
    "data":[  
       {  
          "time":"2018-11-12T13:54:38.5078751+01:00",
@@ -193,12 +193,12 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 #### Delete measurement payload
 ```json 
 {  
-   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
+   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f", //required
    "types":[  
       "w",
       "pf",
       "kWh"
-   ],
+   ], //required
    "startTime":"0001-01-01T00:00:00Z",
    "endTime":"0001-01-01T00:00:00Z"
 }
