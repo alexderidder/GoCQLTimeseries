@@ -66,6 +66,6 @@ func (i InsertFlag1) databaseInteraction() []byte {
 		return err.MarshallErrorAndAddFlag()
 	}
 	resultCode := make([]byte, 4)
-	binary.LittleEndian.PutUint32(resultCode, 1)
+	binary.LittleEndian.PutUint32(resultCode, 2)
 	return resultCode
 }
