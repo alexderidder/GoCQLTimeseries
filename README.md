@@ -1,4 +1,6 @@
 
+# HOW DO I RUN THE TESTS?
+
 # GoCQLSockets
 
 Save kWh, wattage & power factor using websockets and GoCQL

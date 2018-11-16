@@ -23,8 +23,8 @@ type Client struct {
 	data   chan []byte
 }
 
-
-func StartServerMode(pem , key, ipAddressAndPort string, timeout, bufferSize uint32 ){
+// seems strange to me that the StartServerMode has nothing to do with the server itself. Maybe because server is used for database connection, and this server is a tls server. Improve naming.
+func StartServerMode(pem, key, ipAddressAndPort string, timeout, bufferSize uint32) {
 	fmt.Println("Starting server...")
 	listener := getListenerOverTLS(pem, key, ipAddressAndPort)
 
@@ -37,22 +37,24 @@ func StartServerMode(pem , key, ipAddressAndPort string, timeout, bufferSize uin
 	go manager.listenToRegisterAndUnregisterChannelsAndAddOrDelete()
 
 	for {
-		connection, err := listener.Accept()
+		connection, err := listener.Accept() // this is blocking, might be nice to explain that in a comment (or is that implied?)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err) // no logger here?
 			continue
 		}
-		client := &Client{socket: connection, data: make(chan []byte)}
+		client := &Client{socket: connection, data: make(chan []byte)} // why do we have to call make everywhere?
 		manager.register <- client
 		go manager.readSocketAndSendToDataChannel(client, bufferSize)
 		go client.listenToDataChannelAndProcessMessage(timeout)
 	}
 }
 
-func getListenerOverTLS(pem, key, ipAddressAndPort string ) net.Listener{
+func getListenerOverTLS(pem, key, ipAddressAndPort string) net.Listener {
+	// this seems ...... cryptic. A small comment that would explain this code to readers would be nice.
 	cert, err := tls.LoadX509KeyPair(pem, key)
 
 	if err != nil {
+		// why do we use a log module here while we're using fmt Println at other places?
 		log.Fatal(err)
 	}
 
@@ -62,17 +64,17 @@ func getListenerOverTLS(pem, key, ipAddressAndPort string ) net.Listener{
 
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(0)
+		os.Exit(0) // why not panic?
 	}
 	return listener
 }
-
-
 
 func (manager *ClientManager) readSocketAndSendToDataChannel(client *Client, bufferSize uint32) {
 	for {
 		message := make([]byte, bufferSize)
 		length, err := client.socket.Read(message)
+
+		// what sort of errors can happen here that we're forcefully rejecting the client?
 		if err != nil {
 			manager.unregister <- client
 			client.socket.Close()
@@ -83,5 +85,3 @@ func (manager *ClientManager) readSocketAndSendToDataChannel(client *Client, buf
 		}
 	}
 }
-
-

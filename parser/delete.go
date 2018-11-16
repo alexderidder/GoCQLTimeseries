@@ -7,14 +7,17 @@ import (
 	"encoding/json"
 )
 
+// I'd suggest naming this a DeleteQuery, or DeleteMessage etc..
 
-
+// THE RESPONSIBILITY OF IMPLEMENTING THE Command INTERFACE LIES WITH THESE FILES, NOT FORCING THEM INTO A METHOD EXPECTING A COMMAND!
+// THE RESPONSIBILITY OF IMPLEMENTING THE FlagMethods INTERFACE LIES WITH THESE FILES, NOT FORCING THEM INTO A METHOD EXPECTING A COMMAND!
 type Delete struct {
-	flag []byte
-	message    []byte
+	flag    []byte
+	message []byte
 	request *model.DeleteJSON
 }
 
+// check variable names! See Insert for suggestions on what's wrong here.
 type DeleteFlag1 struct {
 	delete *Delete
 }
@@ -25,10 +28,9 @@ func (d Delete) parseFlag() []byte {
 	case 1:
 		return d.executeMethodsPerFlag(DeleteFlag1{&d})
 	default:
-		return  model.FlagNoExist.MarshallErrorAndAddFlag()
+		return model.FlagNoExist.MarshallErrorAndAddFlag()
 	}
 }
-
 
 func (d Delete) executeMethodsPerFlag(test2 FlagMethods) []byte {
 
@@ -36,12 +38,11 @@ func (d Delete) executeMethodsPerFlag(test2 FlagMethods) []byte {
 		return model.ErrorMarshal.MarshallErrorAndAddFlag()
 	}
 	error := test2.checkParameters()
-	if !error.IsNull(){
+	if !error.IsNull() {
 		return error.MarshallErrorAndAddFlag()
 	}
 	return test2.databaseInteraction()
 }
-
 
 func (d DeleteFlag1) marshalBytes() bool {
 	err := json.Unmarshal(d.delete.message, &d.delete.request)
@@ -74,5 +75,3 @@ func (d DeleteFlag1) databaseInteraction() []byte {
 	binary.LittleEndian.PutUint32(resultCode, 2)
 	return resultCode
 }
-
-

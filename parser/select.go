@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 )
 
+// why is this file called select but your methods are all called get?
+
 const (
 	UnitW      string = "w"
 	Unitpf     string = "pf"
@@ -14,12 +16,17 @@ const (
 	UnitkWh    string = "kwh"
 )
 
+// I'd suggest naming this a GetQuery, or GetMessage etc..
+
+// THE RESPONSIBILITY OF IMPLEMENTING THE Command INTERFACE LIES WITH THESE FILES, NOT FORCING THEM INTO A METHOD EXPECTING A COMMAND!
+// THE RESPONSIBILITY OF IMPLEMENTING THE FlagMethods INTERFACE LIES WITH THESE FILES, NOT FORCING THEM INTO A METHOD EXPECTING A COMMAND!
 type Get struct {
-	flag []byte
+	flag    []byte
 	message []byte
 	request *model.RequestSelectJSON
 }
 
+// check variable names! See Insert for suggestions on what's wrong here.
 type GetFlag1 struct {
 	get *Get
 }
@@ -30,7 +37,7 @@ func (g Get) parseFlag() []byte {
 	case 1:
 		return g.executeMethodsPerFlag(GetFlag1{&g})
 	default:
-		return  model.FlagNoExist.MarshallErrorAndAddFlag()
+		return model.FlagNoExist.MarshallErrorAndAddFlag()
 	}
 }
 
@@ -40,7 +47,7 @@ func (g Get) executeMethodsPerFlag(test2 FlagMethods) []byte {
 		return model.ErrorMarshal.MarshallErrorAndAddFlag()
 	}
 	error := test2.checkParameters()
-	if !error.IsNull(){
+	if !error.IsNull() {
 		return error.MarshallErrorAndAddFlag()
 	}
 	return test2.databaseInteraction()
