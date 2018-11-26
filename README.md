@@ -1,6 +1,3 @@
-
-# HOW DO I RUN THE TESTS?
-
 # GoCQLSockets
 
 Save kWh, wattage & power factor using websockets and GoCQL
@@ -200,3 +197,7 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 ```
 
 see errors in model/error.go (work in progress)
+
+# Run tests
+
+to be continued
