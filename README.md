@@ -1,6 +1,3 @@
-
-# HOW DO I RUN THE TESTS?
-
 # GoCQLSockets
 
 Save kWh, wattage & power factor using websockets and GoCQL
@@ -40,12 +37,6 @@ Send messages according protocol below
 ## Standard Message Header
 In general, each message consists of a standard message header followed by request-specific data. The standard message header is structured as follows:
 
-```golang
-type Header struct {
-	MessageLength, RequestID, ResponseID, OpCode uint32
-}
-```
-
 Type | Name | Description
 ------------ | ------------- | -------------
 uint32 |messageLength | The total size of the message in bytes. This total includes the 4 bytes that holds the message length
@@ -63,13 +54,7 @@ Opcode Name | Value | Comment
 
 ## Client Request Messages
 ###  OP_QUERY
-```golang
-struct OP_QUERY {
-    MsgHeader header,
-    int32     flag,
-    json   payload
-}
-```
+
 
 type | Name | Description
 ------------ | ------------ | -------------
@@ -88,19 +73,19 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
       "pf",
       "kwh"
    ],
-   "startTime":"2018-11-12T14:01:59.1708508+01:00",
-   "endTime":"2018-11-12T14:31:59.1708508+01:00",
-   "interval":0
+   "startTime":"2018-11-12T14:01:59.1708508+01:00", //optional
+   "endTime":"2018-11-12T14:31:59.1708508+01:00", //optional
+   "interval":0 //optional
 }
 ```
 
 #### Response select measurement payload
 ```json 
 {  
-   "startTime":"2018-11-12T14:01:59.1708508+01:00",
-   "endTime":"2018-11-12T14:31:59.1708508+01:00",
-   "interval":0,
-   "stones":[  //required
+   "startTime":"2018-11-12T14:01:59.1708508+01:00", //optional
+   "endTime":"2018-11-12T14:31:59.1708508+01:00", //optional
+   "interval":0, //optional
+   "stones":[  
       {  
          "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
          "fields":[  
@@ -141,13 +126,6 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 }
 ```
 ###  OP_INSERT 
-```golang
-struct OP_INSERT {
-    MsgHeader header,
-    int32     flag,
-    json   payload
-}
-```
 
 type | Name | Description
 ------------ | ------------ | -------------
@@ -158,13 +136,13 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 #### Insert measurement payload
 ```json 
 {  
-   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f", //required
+   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f", 
    "data":[  
       {  
          "time":"2018-11-12T13:54:38.5078751+01:00",
-         "kWh":3.3228004,
+         "kWh":3.3228004, 
          "watt":3.0233014,
-         "pf":4.702545
+         "pf":4.702545 
       },
       {  
          "time":"2018-11-12T13:54:39.5078751+01:00",
@@ -178,13 +156,6 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 The database will respond to an OP_QUERY message with an [OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_reply) message.
 
 ###  OP_DELETE
-```golang
-struct OP_DELETE{
-    MsgHeader header,
-    int32     flag,
-    json   payload
-}
-```
 
 type | Name | Description
 ------------ | ------------ | -------------
@@ -195,14 +166,14 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 #### Delete measurement payload
 ```json 
 {  
-   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f", //required
+   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
    "types":[  
       "w",
       "pf",
       "kWh"
-   ], //required
-   "startTime":"0001-01-01T00:00:00Z",
-   "endTime":"0001-01-01T00:00:00Z"
+   ],
+   "startTime":"0001-01-01T00:00:00Z", //optional
+   "endTime":"0001-01-01T00:00:00Z" //optional
 }
 ```
 The database will respond to an OP_QUERY message with an [OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_reply) message.
@@ -210,13 +181,6 @@ The database will respond to an OP_QUERY message with an [OP_REPLY](https://gith
 ##  Database Response Messages
 ###  OP_REPLY
 
-```golang
-struct OP_REPLY{
-    MsgHeader header,
-    int32     flags,
-    json   payload
-}
-```
 type | Name | Description
 ------------ | ------------ | -------------
 16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
@@ -233,3 +197,7 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 ```
 
 see errors in model/error.go (work in progress)
+
+# Run tests
+
+to be continued
