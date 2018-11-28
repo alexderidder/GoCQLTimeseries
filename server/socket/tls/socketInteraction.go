@@ -1,8 +1,7 @@
 package tls
 
 import (
-	"../../../model"
-	"crypto/rand"
+	"GoCQLTimeSeries/model"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -46,17 +45,16 @@ func StartTLSServer(pem, key, ipAddressAndPort string, timeout, bufferSize uint3
 	}
 }
 
-func getListenerOverTLS(pem, key, ipAddressAndPort string) net.Listener {
-	//Read the pem and key files and save them as a Certificate
-	cert, err := tls.LoadX509KeyPair(pem, key)
+func getListenerOverTLS(cert, key, ipAddressAndPort string) net.Listener {
+	//Read the cert and key files and save them as a Certificate
+	certificate, err := tls.LoadX509KeyPair(cert, key)
 
 	if err != nil {
 		//Close program because it needs cert for Encryption
 		panic(err)
 	}
+	tlsConfig := tls.Config{Certificates: []tls.Certificate{certificate}, ClientAuth: tls.VerifyClientCertIfGiven}
 
-	tlsConfig := tls.Config{Certificates: []tls.Certificate{cert}, ClientAuth: tls.RequireAnyClientCert}
-	tlsConfig.Rand = rand.Reader
 	listener, err := tls.Listen("tcp", ipAddressAndPort, &tlsConfig)
 	if err != nil {
 		//Close program because it needs the right config values
@@ -80,7 +78,6 @@ func (manager *ClientManager) listenToRegisterAndUnregisterChannelsAndAddOrDelet
 	}
 }
 
-//@Alex, if socket message is larger then headerlength. Client receives multiple messages with error. Is that a bad habbit? Like messages, "Parsing payload went wrong", "Header parsing went wrong"
 func (manager *ClientManager) readSocketAndSendToDataChannel(client *Client) {
 
 	headerBytes := make([]byte, model.HeaderLength)

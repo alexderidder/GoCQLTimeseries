@@ -4,8 +4,8 @@
     "port": ":12345",
     "certs": {
       "directory": "server/socket/certs/",
-      "pem": "server.pem",
-      "key": "server.key"
+      "cert": "server-crt.pem",
+      "key": "server-key.pem"
     },
     "messages": {
       "timeout": 3,

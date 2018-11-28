@@ -1,7 +1,7 @@
 package model
 
 import (
-	"../util"
+	"GoCQLTimeSeries/util"
 	"encoding/binary"
 )
 const HeaderLength = 16

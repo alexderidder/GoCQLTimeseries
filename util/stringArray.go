@@ -40,3 +40,10 @@ func CheckUnknownAndDuplicatedTypes(request []string) []string {
 	return typePerQuery
 
 }
+
+func ReturnAndRemoveUint32FromByteArrayByIndex(index uint32, message *[]byte) uint32{
+	flag := ByteToUint32(*message, int(index))
+	tempMessage := *message
+	*message = tempMessage[4:]
+	return flag
+}

@@ -1,9 +1,9 @@
 package delete
 
 import (
-	"../../model"
-	"../../server/cassandra"
-	"../../util"
+	"GoCQLTimeSeries/model"
+	"GoCQLTimeSeries/server/cassandra"
+	"GoCQLTimeSeries/util"
 	"encoding/json"
 	"log"
 	"time"
@@ -16,7 +16,7 @@ type DeleteJSON struct {
 	EndTime   time.Time      `json:"endTime"`
 }
 
-func ParseFlag1(message *[]byte) (*DeleteJSON, model.Error) {
+func parseFlag1(message *[]byte) (*DeleteJSON, model.Error) {
 	requestJSON := &DeleteJSON{}
 	if err := requestJSON.marshalBytes(message); !err.IsNull() {
 		return nil, err
@@ -33,7 +33,7 @@ func (requestJSON *DeleteJSON) marshalBytes(message *[]byte) model.Error {
 
 	err := json.Unmarshal(*message, requestJSON)
 	if err != nil {
-		error := model.MarshallError
+		error := model.UnMarshallError
 		error.Message = err.Error()
 		return error
 	}

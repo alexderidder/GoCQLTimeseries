@@ -1,7 +1,7 @@
 package cassandra
 
 import (
-	"../../model"
+	"GoCQLTimeSeries/model"
 	"fmt"
 	"github.com/gocql/gocql"
 	"time"
@@ -24,7 +24,15 @@ func ConnectCassandra(ipAddresses []string, keyspace string, batchSize int, reco
 	dbConn.BatchSize = batchSize
 	dbConn.ReconnectTime = reconnectTime
 	connect()
-	fmt.Println("Database connected")
+	//Blocking, check every second if session is closed. Then connect
+	for {
+		if dbConn.Session.Closed(){
+			connect()
+			fmt.Println("Connection closed with cassandra, trying to reconnect")
+		}		else{
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 func Close() {
@@ -46,25 +54,11 @@ func connect() {
 	}
 }
 
-func reconnect(tries uint32) model.Error {
-	var err error
-	for i := uint32(0); i < tries; i++ {
-		dbConn.Session, err = dbConn.cluster.CreateSession()
-		if err != nil {
-			//TODO: Printing 3 lines with the same error when keyspace doesn't exists
-			fmt.Println(err)
-			time.Sleep(time.Duration(dbConn.ReconnectTime) * time.Second)
-		} else {
-			fmt.Println("Database is connected")
-			return model.NoError
-		}
-	}
-	return model.ServerNoCassandra
-}
-//@Alex What is a good number of tries before error return ?
+
+
 func checkConnection() model.Error {
 	if dbConn.Session.Closed() {
-		reconnect(3)
+		return model.ServerNoCassandra
 	}
 	return model.NoError
 }

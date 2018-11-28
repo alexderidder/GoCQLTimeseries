@@ -11,7 +11,7 @@ type Configuration struct {
 		Port      string `json:"port"`
 		Certs     struct {
 			Directory string `json:"directory"`
-			Pem       string `json:"pem"`
+			Cert       string `json:"cert"`
 			Key       string `json:"key"`
 		} `json:"certs"`
 		Messages struct {

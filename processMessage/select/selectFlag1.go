@@ -1,9 +1,9 @@
 package _select
 
 import (
-	"../../model"
-	"../../server/cassandra"
-	"../../util"
+	"GoCQLTimeSeries/model"
+	"GoCQLTimeSeries/server/cassandra"
+	"GoCQLTimeSeries/util"
 	"encoding/json"
 	"github.com/gocql/gocql"
 	"log"
@@ -40,7 +40,7 @@ type Data struct {
 	Value float32   `json:"value"`
 }
 
-func ParseFlag1(message *[]byte) (*RequestJSON, model.Error) {
+func parseFlag1(message *[]byte) (*RequestJSON, model.Error) {
 	requestJSON := &RequestJSON{}
 	if err := requestJSON.marshalBytes(message); !err.IsNull() {
 		return nil, err
@@ -88,7 +88,7 @@ func (requestJSON *RequestJSON) Execute() ([]byte, model.Error) {
 	if err != nil {
 		error := model.MarshallError
 		error.Message = err.Error()
-		return nil,  error
+		return nil, error
 	}
 	return append(util.Uint32ToByteArray(1), responseJSONBytes...), model.NoError
 }

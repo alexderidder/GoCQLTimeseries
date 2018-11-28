@@ -1,38 +1,51 @@
+
+# HOW DO I RUN THE TESTS?
+
 # GoCQLSockets
 
 Save kWh, wattage & power factor using websockets and GoCQL
 
 # Setup
- # Install Go
+ ## Install Go
 https://golang.org/doc/install 
 
-Setup go path 
+### Setup go path 
 https://github.com/golang/go/wiki/SettingGOPATH
-## Get libraries
+### Get libraries
 ```
 go get github.com/gocql/gocql 
 ```
 ```
 go get github.com/stretchr/testify
 ```
- # Install Cassandra
+### Change imports
+If you change the directory name, also change the imports in the go files of this project. 
+ ## Install Cassandra
 http://cassandra.apache.org/download/
- ## Run Cassandra
+ ### Run Cassandra
 In your cassandra folder run file 'bin/cassandra.exe'
- ## Run cqlsh
+ ### Run cqlsh
 In your cassandra folder run file 'bin/cqlsh.exe'
- ### Setup Cassandra tables
+ #### Setup Cassandra tables
 ```
  run setup.sh
 ```
- # Run sockets
+ # Run server
  
 ## Setup config file
 Edit conf.json to your setup
- ## Run server
-go run main.go --mode server
+ ## Two options
+ 
+ 
+```
+ go run main.go
+```
+ 
+```
+ go build main.go
+ .\main.exe
+```
 
-Send messages according protocol below
 
 ## Standard Message Header
 In general, each message consists of a standard message header followed by request-specific data. The standard message header is structured as follows:
@@ -200,4 +213,6 @@ see errors in model/error.go (work in progress)
 
 # Run tests
 
-to be continued
+```
+go test ./...
+```

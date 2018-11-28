@@ -1,9 +1,9 @@
 package insert
 
 import (
-	"../../model"
-	"../../server/cassandra"
-	"ditheetnuheelanders/util"
+	"GoCQLTimeSeries/model"
+	"GoCQLTimeSeries/server/cassandra"
+	"GoCQLTimeSeries/util"
 	"encoding/json"
 	"time"
 )
@@ -18,7 +18,7 @@ type Request struct {
 	} `json:"data"`
 }
 
-func ParseFlag1(message *[]byte) (*Request, model.Error) {
+func parseFlag1(message *[]byte) (*Request, model.Error) {
 	requestJSON := &Request{}
 	if err := requestJSON.marshalBytes(message); !err.IsNull() {
 		return nil, err
@@ -35,7 +35,7 @@ func (requestJSON *Request) marshalBytes(message *[]byte) model.Error {
 
 	err := json.Unmarshal(*message, requestJSON)
 	if err != nil {
-		error := model.MarshallError
+		error := model.UnMarshallError
 		error.Message = err.Error()
 		return error
 	}
@@ -107,3 +107,4 @@ func (requestJSON *Request) executeDatabase() model.Error {
 
 	return model.NoError
 }
+
