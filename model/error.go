@@ -25,6 +25,7 @@ var (
 	HeaderNoOpCode         = Error{2, "Header doesn't contain opCode"}
 	MarshallError          = Error{300, ""}
 	UnMarshallError        = Error{301, ""}
+	CassandraIterator        = Error{Code: 999, }
 )
 
 func (e *Error) IsNull() bool {

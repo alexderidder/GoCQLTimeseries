@@ -1,16 +1,14 @@
 package model
 
-import (
-	"encoding/json"
-)
+import "encoding/json"
 
-type JSONString struct {
-	Value string
+type JSONFloat64 struct {
+	Value float64
 	Valid bool
 	Set   bool
 }
 
-func (i *JSONString) UnmarshalJSON(data []byte) error {
+func (i *JSONFloat64) UnmarshalJSON(data []byte) error {
 	// If this method was called, the value was set.
 	i.Set = true
 
@@ -21,7 +19,7 @@ func (i *JSONString) UnmarshalJSON(data []byte) error {
 	}
 
 	// The key isn't set to null
-	var temp string
+	var temp float64
 	if err := json.Unmarshal(data, &temp); err != nil {
 		return err
 	}

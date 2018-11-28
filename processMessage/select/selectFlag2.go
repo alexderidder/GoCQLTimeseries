@@ -9,13 +9,40 @@ import (
 	"time"
 )
 
-type RequestFlag1 struct {
+type RequestFlag2 struct {
 	request *RequestJSON
 }
+type RequestJSON struct {
+	StoneIDs  []model.JSONString `json:"stoneIDs"`
+	StartTime time.Time          `json:"startTime"`
+	EndTime   time.Time          `json:"endTime"`
+	Interval  uint32             `json:"interval"`
+}
 
-func parseFlag1(message *[]byte) (*RequestFlag1, model.Error) {
+type ResponseJSON struct {
+	StartTime time.Time    `json:"startTime"`
+	EndTime   time.Time    `json:"endTime"`
+	Interval  uint32       `json:"interval"`
+	Stones    []Stone `json:"stones"`
+}
+
+type Stone struct {
+	StoneID string      `json:"stoneID"`
+	Data    []Data `json:"data"`
+}
+
+type Data struct {
+	Time  time.Time `json:"time"`
+	Value struct {
+		Wattage     float32 `json:"w,omitempty"`
+		PowerFactor float32 `json:"pf,omitempty"`
+		KWH float64 `json:"kWh,omitempty"`
+	} `json:"value"`
+}
+
+func parseFlag2(message *[]byte) (*RequestFlag2, model.Error) {
 	requestJSON := &RequestJSON{}
-	request := &RequestFlag1{requestJSON}
+	request := &RequestFlag2{requestJSON}
 	if err := request.marshalBytes(message); !err.IsNull() {
 		return nil, err
 	}
@@ -27,7 +54,7 @@ func parseFlag1(message *[]byte) (*RequestFlag1, model.Error) {
 	return request, model.NoError
 }
 
-func (requestJSON *RequestFlag1) marshalBytes(message *[]byte) model.Error {
+func (requestJSON *RequestFlag2) marshalBytes(message *[]byte) model.Error {
 	err := json.Unmarshal(*message, requestJSON.request)
 	if err != nil {
 		error := model.UnMarshallError
@@ -38,14 +65,14 @@ func (requestJSON *RequestFlag1) marshalBytes(message *[]byte) model.Error {
 	return model.NoError
 }
 
-func (requestJSON *RequestFlag1) checkParameters() model.Error {
+func (requestJSON *RequestFlag2) checkParameters() model.Error {
 	if len(requestJSON.request.StoneIDs) == 0 {
 		return model.MissingStoneID
 	}
 	return model.NoError
 }
 
-func (requestJSON *RequestFlag1) Execute() ([]byte, model.Error) {
+func (requestJSON *RequestFlag2) Execute() ([]byte, model.Error) {
 	response, error := requestJSON.executeDatabase()
 	if !error.IsNull() {
 		return nil, error
@@ -60,7 +87,7 @@ func (requestJSON *RequestFlag1) Execute() ([]byte, model.Error) {
 	return append(util.Uint32ToByteArray(1), responseJSONBytes...), model.NoError
 }
 
-func (requestJSON *RequestFlag1) executeDatabase() (*ResponseJSON, model.Error) {
+func (requestJSON *RequestFlag2) executeDatabase() (*ResponseJSON, model.Error) {
 	var error model.Error
 	response := ResponseJSON{requestJSON.request.StartTime, requestJSON.request.EndTime, requestJSON.request.Interval, []Stone{}}
 
@@ -81,20 +108,22 @@ func (requestJSON *RequestFlag1) executeDatabase() (*ResponseJSON, model.Error) 
 		stone.StoneID = stoneID.Value
 
 		var iterator *gocql.Iter
-
-		iterator, error = cassandra.Query("SELECT time, "+util.UnitkWh+" FROM kwh_by_id_and_time_v2 WHERE id = ?"+timeQuery, queryValues...)
+		iterator, error = cassandra.Query("SELECT time, "+util.UnitW+", "+util.Unitpf+" FROM w_and_pf_by_id_and_time_v2 WHERE id = ?"+timeQuery, queryValues...)
 		if !error.IsNull() {
 			return nil, error
 		}
-		var kWh *float64
 		var dataList []Data
 		var timeOfRow *time.Time
+		var w, pf *float32
 
-		for iterator.Scan(&timeOfRow, &kWh) {
+		for iterator.Scan(&timeOfRow, &w, &pf) {
 			if (timeOfRow != nil) {
-				data := Data{Time: *timeOfRow,}
-				if kWh != nil {
-					data.Value.KWH = *kWh
+				var data= Data{Time: *timeOfRow,}
+				if w != nil {
+					data.Value.Wattage = *w
+					if pf != nil {
+						data.Value.PowerFactor = *pf
+					}
 					dataList = append(dataList, data)
 				}
 			}

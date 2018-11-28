@@ -9,12 +9,12 @@ import (
 )
 
 type Request struct {
-	StoneID model.JSONUUID `json:"stoneID"`
+	StoneID model.JSONString `json:"stoneID"`
 	Data    []struct {
 		Time        time.Time         `json:"time"`
 		Watt        model.JSONFloat32 `json:"watt"`
 		PowerFactor model.JSONFloat32 `json:"pf"`
-		KWH         model.JSONFloat32 `json:"kWh"`
+		KWH         model.JSONFloat64 `json:"kWh"`
 	} `json:"data"`
 }
 
@@ -74,18 +74,21 @@ func (requestJSON *Request) executeDatabase() model.Error {
 		return error
 	}
 	for _, data := range requestJSON.Data {
-
-		if data.Watt.Valid && data.PowerFactor.Valid {
-			err := cassandra.AddQueryToBatch(batch, "INSERT INTO w_and_pf_by_id_and_time (id, time, w, pf) VALUES (?, ?, ?, ?)", requestJSON.StoneID.Value, data.Time, data.Watt.Value, data.PowerFactor.Value)
-			if !err.IsNull() {
-				return err
+		if data.Watt.Valid {
+			if data.PowerFactor.Valid {
+				error = cassandra.AddQueryToBatch(batch, "INSERT INTO w_and_pf_by_id_and_time_v2  (id, time, w, pf) VALUES (?, ?, ?, ?)", requestJSON.StoneID.Value, data.Time, data.Watt.Value, data.PowerFactor.Value)
+			} else{
+				error = cassandra.AddQueryToBatch(batch, "INSERT INTO w_and_pf_by_id_and_time_v2 (id, time, w, pf) VALUES (?, ?, ?, ?)", requestJSON.StoneID.Value, data.Time, data.Watt.Value, float32(1))
 			}
-		} else {
-			// else?
+
+			if !error.IsNull() {
+				return error
+			}
+		} else {			// else?
 		}
 
 		if data.KWH.Valid {
-			err := cassandra.AddQueryToBatch(batch2, "INSERT INTO kwh_by_id_and_time (id, time, kwh) VALUES (?, ?, ?)", requestJSON.StoneID.Value, data.Time, data.KWH.Value)
+			err := cassandra.AddQueryToBatch(batch2, "INSERT INTO kwh_by_id_and_time_v2 (id, time, kwh) VALUES (?, ?, ?)", requestJSON.StoneID.Value, data.Time, data.KWH.Value)
 			if !err.IsNull() {
 				return err
 			}
@@ -107,4 +110,3 @@ func (requestJSON *Request) executeDatabase() model.Error {
 
 	return model.NoError
 }
-

@@ -53,7 +53,8 @@ func getListenerOverTLS(cert, key, ipAddressAndPort string) net.Listener {
 		//Close program because it needs cert for Encryption
 		panic(err)
 	}
-	tlsConfig := tls.Config{Certificates: []tls.Certificate{certificate}, ClientAuth: tls.VerifyClientCertIfGiven}
+	//tlsConfig := tls.Config{Certificates: []tls.Certificate{certificate}, ClientAuth: tls.VerifyClientCertIfGiven}
+	tlsConfig := tls.Config{Certificates: []tls.Certificate{certificate}, ClientAuth: tls.RequireAnyClientCert}
 
 	listener, err := tls.Listen("tcp", ipAddressAndPort, &tlsConfig)
 	if err != nil {

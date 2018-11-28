@@ -46,7 +46,7 @@ func connect() {
 		if err != nil {
 			//TODO: Printing 3 lines with the same error when keyspace doesn't exists
 			fmt.Println(err)
-			time.Sleep(time.Duration(dbConn.ReconnectTime) * time.Second)
+			time.Sleep(time.Duration(dbConn.ReconnectTime))
 		} else {
 			fmt.Println("Database is connected")
 			return
