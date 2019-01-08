@@ -1,12 +1,9 @@
-
-# HOW DO I RUN THE TESTS?
-
 # GoCQLSockets
 
 Save kWh, wattage & power factor using websockets and GoCQL
 
 # Setup
- ## Install Go
+## Install Go
 https://golang.org/doc/install 
 
 ### Setup go path 
@@ -45,7 +42,6 @@ Edit conf.json to your setup
  go build main.go
  .\main.exe
 ```
-
 
 ## Standard Message Header
 In general, each message consists of a standard message header followed by request-specific data. The standard message header is structured as follows:
@@ -208,6 +204,4 @@ see errors in model/error.go (work in progress)
 
 # Run tests
 
-```
-go test ./...
-```
+to be continued
