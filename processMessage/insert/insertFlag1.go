@@ -5,22 +5,30 @@ import (
 	"GoCQLTimeSeries/server/cassandra"
 	"GoCQLTimeSeries/util"
 	"encoding/json"
-	"time"
+	"sort"
 )
 
-type Request struct {
+type RequestFlag1 struct {
 	StoneID model.JSONString `json:"stoneID"`
 	Data    []struct {
-		Time        time.Time         `json:"time"`
-		Watt        model.JSONFloat32 `json:"watt"`
-		PowerFactor model.JSONFloat32 `json:"pf"`
-		KWH         model.JSONFloat64 `json:"kWh"`
+		Time  int64 `json:"time"`
+		Value struct {
+			KWH model.JSONFloat64 `json:"kWh"`
+		} `json:"value"`
 	} `json:"data"`
 }
 
-func parseFlag1(message *[]byte) (*Request, model.Error) {
-	requestJSON := &Request{}
-	if err := requestJSON.marshalBytes(message); !err.IsNull() {
+type ResponseFlag1 struct {
+	Succeed struct {
+		KwH float32 `json:"kWh"`
+	}
+}
+
+func parseFlag1(message []byte, indexOfMessage int) (*RequestFlag1, model.Error) {
+	requestJSON := &RequestFlag1{}
+
+
+	if err := requestJSON.marshalBytes(message, indexOfMessage); !err.IsNull() {
 		return nil, err
 	}
 
@@ -31,9 +39,9 @@ func parseFlag1(message *[]byte) (*Request, model.Error) {
 	return requestJSON, model.NoError
 }
 
-func (requestJSON *Request) marshalBytes(message *[]byte) model.Error {
+func (requestJSON *RequestFlag1) marshalBytes(message []byte, indexOfMessage int) model.Error {
 
-	err := json.Unmarshal(*message, requestJSON)
+	err := json.Unmarshal(message[indexOfMessage:], requestJSON)
 	if err != nil {
 		error := model.UnMarshallError
 		error.Message = err.Error()
@@ -42,7 +50,7 @@ func (requestJSON *Request) marshalBytes(message *[]byte) model.Error {
 	return model.NoError
 }
 
-func (requestJSON *Request) checkParameters() model.Error {
+func (requestJSON *RequestFlag1) checkParameters() model.Error {
 	if !requestJSON.StoneID.Valid {
 		return model.MissingStoneID
 	}
@@ -54,59 +62,68 @@ func (requestJSON *Request) checkParameters() model.Error {
 	return model.NoError
 }
 
-func (requestJSON *Request) Execute() ([]byte, model.Error) {
-	err := requestJSON.executeDatabase()
-	if !err.IsNull() {
-		return nil, err
+func (requestJSON *RequestFlag1) Execute() ([]byte, model.Error) {
+
+
+	response, error := requestJSON.executeDatabase()
+	if !error.IsNull() {
+		return nil, error
 	}
 
-	return util.Uint32ToByteArray(2), model.NoError
+	responseJSONBytes, err := json.Marshal(response)
+	if err != nil {
+		error := model.MarshallError
+		error.Message = err.Error()
+		return nil, error
+	}
+
+	return append(util.Uint32ToByteArray(1), responseJSONBytes...), model.NoError
 }
 
-func (requestJSON *Request) executeDatabase() model.Error {
+func (requestJSON *RequestFlag1) executeDatabase() (*ResponseFlag1, model.Error) {
+	response := &ResponseFlag1{}
 	var error model.Error
 	batch, error := cassandra.CreateBatch()
 	if !error.IsNull() {
-		return error
+		return nil, error
 	}
-	batch2, error := cassandra.CreateBatch()
-	if !error.IsNull() {
-		return error
-	}
+
+	sort.Slice(requestJSON.Data, func(i, j int) bool {
+		return requestJSON.Data[i].Time < requestJSON.Data[j].Time
+	})
+	var timestampInSeconds int64
+	var currentWeek int64 = 0
 	for _, data := range requestJSON.Data {
-		if data.Watt.Valid {
-			if data.PowerFactor.Valid {
-				error = cassandra.AddQueryToBatch(batch, "INSERT INTO w_and_pf_by_id_and_time_v2  (id, time, w, pf) VALUES (?, ?, ?, ?)", requestJSON.StoneID.Value, data.Time, data.Watt.Value, data.PowerFactor.Value)
-			} else{
-				error = cassandra.AddQueryToBatch(batch, "INSERT INTO w_and_pf_by_id_and_time_v2 (id, time, w, pf) VALUES (?, ?, ?, ?)", requestJSON.StoneID.Value, data.Time, data.Watt.Value, float32(1))
-			}
 
-			if !error.IsNull() {
-				return error
-			}
-		} else {			// else?
-		}
+		if data.Value.KWH.Valid {
+			response.Succeed.KwH++
+			timestampInSeconds = data.Time
+			if tempweek := timestampInSeconds/604800000; tempweek != currentWeek {
+				err := cassandra.ExecuteAndClearBatch(batch)
+				if !err.IsNull() {
+					return nil, err
+				}
 
-		if data.KWH.Valid {
-			err := cassandra.AddQueryToBatch(batch2, "INSERT INTO kwh_by_id_and_time_v2 (id, time, kwh) VALUES (?, ?, ?)", requestJSON.StoneID.Value, data.Time, data.KWH.Value)
+				for err = cassandra.ExecQuery("INSERT INTO kwh_inserted_in_layer1 (time_bucket, id) VALUES (?, ?)", tempweek, requestJSON.StoneID.Value); !error.IsNull(); {
+
+				}
+
+				currentWeek = tempweek
+			}
+			//fmt.Println(currentWeek)
+			err := cassandra.AddQueryToBatchAndExecuteWhenBatchMax(batch, "INSERT INTO kWh_by_id_and_time_in_layer1 (id, time_bucket, time, kwh) VALUES (?,?, ?, ?)", requestJSON.StoneID.Value, currentWeek, timestampInSeconds, data.Value.KWH.Value)
 			if !err.IsNull() {
-				return err
+				return nil, err
 			}
-		} else {
-			// else?
+
 		}
 
 	}
 
 	error = cassandra.ExecuteBatch(batch)
 	if !error.IsNull() {
-		return error
+		return nil, error
 	}
 
-	error = cassandra.ExecuteBatch(batch2)
-	if !error.IsNull() {
-		return error
-	}
-
-	return model.NoError
+	return response, model.NoError
 }

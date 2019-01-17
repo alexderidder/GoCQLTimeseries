@@ -14,36 +14,31 @@ type RequestFlag2 struct {
 }
 type RequestJSON struct {
 	StoneIDs  []model.JSONString `json:"stoneIDs"`
-	StartTime time.Time          `json:"startTime"`
-	EndTime   time.Time          `json:"endTime"`
+	StartTime model.JSONInt64    `json:"startTime"`
+	EndTime   model.JSONInt64    `json:"endTime"`
 	Interval  uint32             `json:"interval"`
 }
 
 type ResponseJSON struct {
-	StartTime time.Time    `json:"startTime"`
-	EndTime   time.Time    `json:"endTime"`
-	Interval  uint32       `json:"interval"`
-	Stones    []Stone `json:"stones"`
-}
-
-type Stone struct {
-	StoneID string      `json:"stoneID"`
-	Data    []Data `json:"data"`
+	//StartTime int64             `json:"startTime"`
+	//EndTime   int64             `json:"endTime"`
+	//Bucket  uint32            `json:"interval"`
+	Stones    map[string][]Data `json:"stones"`
 }
 
 type Data struct {
-	Time  time.Time `json:"time"`
+	Time  int64 `json:"time"`
 	Value struct {
 		Wattage     float32 `json:"w,omitempty"`
 		PowerFactor float32 `json:"pf,omitempty"`
-		KWH float64 `json:"kWh,omitempty"`
+		KWH         float64 `json:"kWh,omitempty"`
 	} `json:"value"`
 }
 
-func parseFlag2(message *[]byte) (*RequestFlag2, model.Error) {
+func parseFlag2(message []byte, indexOfMessage int) (*RequestFlag2, model.Error) {
 	requestJSON := &RequestJSON{}
 	request := &RequestFlag2{requestJSON}
-	if err := request.marshalBytes(message); !err.IsNull() {
+	if err := request.marshalBytes(message, indexOfMessage); !err.IsNull() {
 		return nil, err
 	}
 
@@ -54,8 +49,8 @@ func parseFlag2(message *[]byte) (*RequestFlag2, model.Error) {
 	return request, model.NoError
 }
 
-func (requestJSON *RequestFlag2) marshalBytes(message *[]byte) model.Error {
-	err := json.Unmarshal(*message, requestJSON.request)
+func (requestJSON *RequestFlag2) marshalBytes(message []byte, indexOfMessage int) model.Error {
+	err := json.Unmarshal(message[indexOfMessage:], requestJSON.request)
 	if err != nil {
 		error := model.UnMarshallError
 		error.Message = err.Error()
@@ -89,23 +84,20 @@ func (requestJSON *RequestFlag2) Execute() ([]byte, model.Error) {
 
 func (requestJSON *RequestFlag2) executeDatabase() (*ResponseJSON, model.Error) {
 	var error model.Error
-	response := ResponseJSON{requestJSON.request.StartTime, requestJSON.request.EndTime, requestJSON.request.Interval, []Stone{}}
+	response := ResponseJSON{ Stones: map[string][]Data{}}
 
 	var timeValues []interface{}
 	var timeQuery string
-	if !requestJSON.request.StartTime.IsZero() && !requestJSON.request.EndTime.IsZero() {
+	if requestJSON.request.StartTime.Set && requestJSON.request.EndTime.Set {
 		timeQuery = ` AND time >= ? AND time <= ? `
-		timeValues = append(timeValues, requestJSON.request.StartTime)
-		timeValues = append(timeValues, requestJSON.request.EndTime)
+		timeValues = append(timeValues, requestJSON.request.StartTime.Value)
+		timeValues = append(timeValues, requestJSON.request.EndTime.Value)
 	}
 	var queryValues []interface{}
 
 	for _, stoneID := range requestJSON.request.StoneIDs {
 		queryValues = append([]interface{}{}, stoneID.Value)
 		queryValues = append(queryValues, timeValues...)
-
-		stone := Stone{}
-		stone.StoneID = stoneID.Value
 
 		var iterator *gocql.Iter
 		iterator, error = cassandra.Query("SELECT time, "+util.UnitW+", "+util.Unitpf+" FROM w_and_pf_by_id_and_time_v2 WHERE id = ?"+timeQuery, queryValues...)
@@ -117,8 +109,8 @@ func (requestJSON *RequestFlag2) executeDatabase() (*ResponseJSON, model.Error) 
 		var w, pf *float32
 
 		for iterator.Scan(&timeOfRow, &w, &pf) {
-			if (timeOfRow != nil) {
-				var data= Data{Time: *timeOfRow,}
+			if timeOfRow != nil {
+				var data = Data{Time: timeOfRow.Unix(),}
 				if w != nil {
 					data.Value.Wattage = *w
 					if pf != nil {
@@ -134,8 +126,7 @@ func (requestJSON *RequestFlag2) executeDatabase() (*ResponseJSON, model.Error) 
 			return nil, error
 
 		}
-		stone.Data = dataList
-		response.Stones = append(response.Stones, stone)
+		response.Stones[stoneID.Value] = dataList
 	}
 	return &response, model.NoError
 

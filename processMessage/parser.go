@@ -7,7 +7,7 @@ import (
 	"GoCQLTimeSeries/processMessage/select"
 )
 
-func ParseOpCode(opCode uint32, message *[]byte) (model.Execute, model.Error) {
+func ParseOpCode(opCode uint32, message []byte) (model.Execute, model.Error) {
 	switch opCode {
 	case 100:
 		executeObject, err := insert.Parse(message)
