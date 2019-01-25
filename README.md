@@ -1,17 +1,25 @@
+
+# HOW DO I RUN THE TESTS?
+
 # GoCQLSockets
 
 Save kWh, wattage & power factor using websockets and GoCQL
 
 # Setup
-## Install Go
+ ## Install Go
 https://golang.org/doc/install 
 
 ### Setup go path 
 https://github.com/golang/go/wiki/SettingGOPATH
 ### Get libraries
+
 ```
 go get github.com/gocql/gocql 
 ```
+```
+go get github.com/stretchr/testify
+```
+When using old golang version
 ```
 go get github.com/stretchr/testify
 ```
@@ -43,6 +51,7 @@ Edit conf.json to your setup
  .\main.exe
 ```
 
+
 ## Standard Message Header
 In general, each message consists of a standard message header followed by request-specific data. The standard message header is structured as follows:
 
@@ -68,7 +77,7 @@ Opcode Name | Value | Comment
 type | Name | Description
 ------------ | ------------ | -------------
 16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** kWh  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_request_type_1) - [Response](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_response_type_1)<br> **2** wattage & pf - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_request_type_1) -  [Response](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_response_type_2)
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** Energy Usage  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_request_type_1) - [Response](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_response_type_1)<br> **2** Power Usage - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_request_type_1) -  [Response](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_response_type_2)
 
 
 #### Query request type 1
@@ -77,17 +86,17 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
    "stoneIDs":[  
       "5b8d0018acc9bc3124af2cc2"
    ],
-   "startTime":"2018-11-12T14:01:59.1708508+01:00", //optional
-   "endTime":"2018-11-12T14:31:59.1708508+01:00", //optional
-   "interval":0 //optional
+   "startTime":"1548252675000", //Epoch in ms
+   "endTime":"1548252905000", //Epoch in ms
+   "interval":0, //optional
 }
 ```
 
 #### Query response type 1
 ```json 
 {  
-   "startTime":"2018-11-12T14:01:59.1708508+01:00", //optional
-   "endTime":"2018-11-12T14:31:59.1708508+01:00", //optional
+   "startTime":"1548252675000", //Epoch in ms
+   "endTime":"1548252905000", //Epoch in ms
    "interval":0, //optional
    "stones":[  
       {  
@@ -115,8 +124,8 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 #### Query response type 2
 ```json 
 {  
-   "startTime":"2018-11-12T14:01:59.1708508+01:00", //optional
-   "endTime":"2018-11-12T14:31:59.1708508+01:00", //optional
+   "startTime":"1548252675000", //Epoch in ms
+   "endTime":"1548252905000", //Epoch in ms
    "interval":0, //optional
    "stones":[  
       {  
@@ -140,8 +149,7 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 type | Name | Description
 ------------ | ------------ | -------------
 16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert-measurement-payload)
-
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** [Energy History](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert-request-type-1) <br>  **2** [Power History](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert-request-type-2)
 
 #### Insert request type 1
 ```json 
@@ -149,36 +157,51 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
    "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f", 
    "data":[  
       {  
-         "time":"2018-11-12T13:54:38.5078751+01:00",
-         "kWh":3.3228004, 
-         "watt":3.0233014,
-         "pf":4.702545 
-      },
+         "time":"1548252675000", //Epoch in ms
+         "kWh":3.3228004
+       },
+       {  
+          "time":"1548252679000", //Epoch in ms
+          "kWh":3.4341154
+       }
+    ]
+ }
+```
+
+#### Insert request type 2
+```json 
+{  
+   "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f", 
+   "data":[  
       {  
-         "time":"2018-11-12T13:54:39.5078751+01:00",
-         "kWh":3.4341154
-      }
-   ]
+          "time":"1548252675000", //Epoch in ms
+          "watt":3.0233014,
+          "pf":4.702545 
+       },
+       {  
+          "time":"1548252679000", //Epoch in ms
+          "kWh":3.4341154
+       }
+    ]
 }
 ```
 
-			
 The database will respond to an OP_QUERY message with an [OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_reply) message.
-
+	
 ###  OP_DELETE
 
 type | Name | Description
 ------------ | ------------ | -------------
 16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** kWh  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_request_type_1)<br>  **2** Watt & powerfactor  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_request_type_1)
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** Energy History  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_request_type_1)<br>  **2** Power History  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_request_type_1)
 
 #### Delete request type 1
 ```json 
 {  
    "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
-   "startTime":"0001-01-01T00:00:00Z", //optional
-   "endTime":"0001-01-01T00:00:00Z" //optional
-}
+   "startTime":"1548252679000", //Epoch in ms
+   "endTime":"1548252680000" //optional
+} 
 ```
 The database will respond to an OP_QUERY message with an [OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_reply) message.
 
@@ -200,8 +223,10 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 }
 ```
 
-see errors in model/error.go (work in progress)
+see errors in datatypes/error.go 
 
 # Run tests
 
-to be continued
+```
+go test ./...
+   ```

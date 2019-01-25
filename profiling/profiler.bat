@@ -1,0 +1,1 @@
+go tool pprof --pdf \Users\Alex\go\src\GoCQLTimeSeries\main.exe \Users\Alex\AppData\Local\Temp\profile454727395\cpu.pprof > file.pdf

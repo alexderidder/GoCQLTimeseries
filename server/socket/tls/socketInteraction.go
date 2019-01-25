@@ -3,10 +3,11 @@ package tls
 import (
 	"GoCQLTimeSeries/model"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
-	"time"
 )
 
 type ClientManager struct {
@@ -47,21 +48,40 @@ func StartTLSServer(pem, key, ipAddressAndPort string, timeout, bufferSize uint3
 
 func getListenerOverTLS(cert, key, ipAddressAndPort string) net.Listener {
 	//Read the cert and key files and save them as a Certificate
-	certificate, err := tls.LoadX509KeyPair(cert, key)
-
+	tlsConfig, err := createServerConfig("server/socket/certs/ca-crt.pem", cert, key)
 	if err != nil {
-		//Close program because it needs cert for Encryption
-		panic(err)
+		panic( err.Error())
 	}
-	//tlsConfig := tls.Config{Certificates: []tls.Certificate{certificate}, ClientAuth: tls.VerifyClientCertIfGiven}
-	tlsConfig := tls.Config{Certificates: []tls.Certificate{certificate}, ClientAuth: tls.RequireAnyClientCert}
 
-	listener, err := tls.Listen("tcp", ipAddressAndPort, &tlsConfig)
+	listener, err := tls.Listen("tcp", ipAddressAndPort, tlsConfig)
 	if err != nil {
 		//Close program because it needs the right config values
 		panic(err)
 	}
 	return listener
+}
+
+func createServerConfig(ca, crt, key string) (*tls.Config, error) {
+	caCertPEM, err := ioutil.ReadFile(ca)
+	if err != nil {
+		return nil, err
+	}
+
+	roots := x509.NewCertPool()
+	ok := roots.AppendCertsFromPEM(caCertPEM)
+	if !ok {
+		panic("failed to parse root certificate")
+	}
+
+	cert, err := tls.LoadX509KeyPair(crt, key)
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    roots,
+	}, nil
 }
 
 func (manager *ClientManager) listenToRegisterAndUnregisterChannelsAndAddOrDelete() {
@@ -86,8 +106,8 @@ func (manager *ClientManager) readSocketAndSendToDataChannel(client *Client) {
 
 	//Keeps reading messages, first header. Then the remaining bytes.
 	for {
-		client.socket.SetReadDeadline(time.Time{})
-		err := client.read(&headerBytes)
+		//client.socket.SetReadDeadline(time.Time{})
+		_, err := client.read(headerBytes)
 		if err != nil {
 			//Can only receive connection close message
 			manager.unregister <- client
@@ -100,27 +120,30 @@ func (manager *ClientManager) readSocketAndSendToDataChannel(client *Client) {
 		if !error.IsNull() {
 			fmt.Println(error.Message)
 			client.writeJsonResponse(requestHeader.RequestID, error.MarshallErrorAndAddFlag())
-			continue
-
+			manager.unregister <- client
+			client.socket.Close()
+			return
 		}
 		//Read payload with length declared in header - headerlength
 		message = make([]byte, int(requestHeader.MessageLength)-model.HeaderLength)
-		client.socket.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
-		err = client.read(&message)
+		//client.socket.SetReadDeadline(time.Now().Add(time.Millisecond * 300))
+		_, err = client.read(message)
 		if err != nil {
 			//if err is timeout, payload is smaller then messagelength. So return error
-			if err, ok := err.(net.Error); ok && err.Timeout() {
-				{
-					errBytes := model.ReceivedFullMessage.MarshallErrorAndAddFlag()
-					client.writeJsonResponse(requestHeader.RequestID, errBytes)
-					continue
-				}
-
-			}
+			//if err, ok := err.(net.Error); ok && err.Timeout() {
+			//	{
+			//		errBytes := model.ReceivedFullMessage.MarshallErrorAndAddFlag()
+			//		client.writeJsonResponse(requestHeader.RequestID, errBytes)
+			//		manager.unregister <- client
+			//		client.socket.Close()
+			//		return
+			//	}
+			//
+			//}
 			//Else it is connect close error message.
 			manager.unregister <- client
 			client.socket.Close()
-			break;
+			break
 		}
 		//If received header + payload. Process message
 		go client.parseExecuteAndResponseToMessage(*requestHeader, message)
@@ -129,8 +152,7 @@ func (manager *ClientManager) readSocketAndSendToDataChannel(client *Client) {
 
 }
 
-func (client *Client) read(bytes *[]byte) error {
+func (client *Client) read(bytes []byte) (int, error) {
 	//Returns error if receives connection close message or timeout
-	_, err := io.ReadFull(client.socket, *bytes)
-	return err
+	return io.ReadFull(client.socket, bytes)
 }

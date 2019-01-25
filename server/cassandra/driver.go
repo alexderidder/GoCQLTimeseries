@@ -1,7 +1,7 @@
 package cassandra
 
 import (
-	"GoCQLTimeSeries/model"
+	"GoCQLTimeSeries/datatypes"
 	"fmt"
 	"github.com/gocql/gocql"
 	"time"
@@ -56,55 +56,100 @@ func connect() {
 
 
 
-func checkConnection() model.Error {
+func checkConnection() datatypes.Error {
 	if dbConn.Session.Closed() {
-		return model.ServerNoCassandra
+		return datatypes.ServerNoCassandra
 	}
-	return model.NoError
+	return datatypes.NoError
 }
 
-func Query(stmt string, values ...interface{}) (*gocql.Iter, model.Error) {
+func Query(stmt string, values ...interface{}) (*gocql.Iter, datatypes.Error) {
+	if err := checkConnection(); !err.IsNull() {
+		return nil, err
+	}
+	return dbConn.Session.Query(stmt, values...).Iter(), datatypes.NoError
+}
+
+func ExecQuery(stmt string, values ...interface{}) ( datatypes.Error) {
+	if err := checkConnection(); !err.IsNull() {
+		return  err
+
+	}
+	err := dbConn.Session.Query(stmt, values...).Exec()
+	if err != nil {
+		return datatypes.ExecuteCassandra
+	}
+	return datatypes.NoError
+}
+
+func CreateBatch() (*gocql.Batch, datatypes.Error) {
 	if err := checkConnection(); !err.IsNull() {
 		return nil, err
 
 	}
-	return dbConn.Session.Query(stmt, values...).Iter(), model.NoError
+	return dbConn.Session.NewBatch(gocql.LoggedBatch), datatypes.NoError
 }
 
-func CreateBatch() (*gocql.Batch, model.Error) {
-	if err := checkConnection(); !err.IsNull() {
-		return nil, err
-
-	}
-	return dbConn.Session.NewBatch(gocql.LoggedBatch), model.NoError
-}
-
-func ExecuteBatch(batch *gocql.Batch) model.Error {
+func ExecuteBatch(batch *gocql.Batch) datatypes.Error {
 	if err := checkConnection(); !err.IsNull() {
 		return err
 	}
 	if batch.Size() > 0 {
 		err := dbConn.Session.ExecuteBatch(batch)
 		if err != nil {
-			return model.Error{100, err.Error()}
+			return datatypes.Error{100, err.Error()}
 		}
+		batch = nil
 	}
-	return model.NoError
+	return datatypes.NoError
 }
 
-func AddQueryToBatch(batch *gocql.Batch, stmt string, values ...interface{}) model.Error {
+func AddQueryToBatchAndExecuteWhenBatchMax(batch *gocql.Batch, stmt string, values ...interface{}) datatypes.Error {
 	if err := checkConnection(); !err.IsNull() {
 		return err
 	}
 	batch.Query(stmt, values...)
 	if batch.Size()%dbConn.BatchSize == 0 {
+		return ExecuteAndClearBatch(batch)
+	}
+	return datatypes.NoError
+}
+
+func ExecuteAndClearBatch(batch *gocql.Batch) datatypes.Error {
+	if batch.Size() > 0 {
+
 		err := dbConn.Session.ExecuteBatch(batch)
 		if err != nil {
-			return model.Error{100, err.Error()}
+			return datatypes.Error{100, err.Error()}
 		}
 		*batch = *dbConn.Session.NewBatch(gocql.LoggedBatch)
+	}
+	return datatypes.NoError
+}
+
+
+func ExecuteBatchWithoutError(batch *gocql.Batch) {
+	if err := checkConnection(); !err.IsNull() {
+		time.Sleep(time.Duration(dbConn.ReconnectTime))
 
 	}
-	return model.NoError
+	for {
+		if err := dbConn.Session.ExecuteBatch(batch); err != nil {
+			time.Sleep(time.Duration(dbConn.ReconnectTime))
+			continue
+		}
+		break;
+	
+	}
+}
+
+func AddQueryToBatchAndExecuteBatchTillSuccess(batch *gocql.Batch, stmt string, values ...interface{})  {
+	for  err := checkConnection(); !err.IsNull(); {
+		time.Sleep(time.Duration(dbConn.ReconnectTime))
+	}
+	batch.Query(stmt, values...)
+	if batch.Size()%dbConn.BatchSize == 0 {
+		go ExecuteAndClearBatch(batch)
+	}
 
 }

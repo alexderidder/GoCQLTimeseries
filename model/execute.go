@@ -1,5 +1,7 @@
 package model
 
+import "GoCQLTimeSeries/datatypes"
+
 type Execute interface {
-	Execute() ([]byte, Error)
+	Execute() ([]byte, datatypes.Error)
 }

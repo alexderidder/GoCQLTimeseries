@@ -1,6 +1,7 @@
 package model
 
 import (
+	"GoCQLTimeSeries/datatypes"
 	"GoCQLTimeSeries/util"
 	"encoding/binary"
 )
@@ -28,26 +29,26 @@ func (h *Header) MakeHeader() []byte {
 	return requestHeader
 }
 
-func BytesToHeader(request []byte) (*Header, Error) {
+func BytesToHeader(request []byte) (*Header, datatypes.Error) {
 	// no size check, what if this array is not 16 units long? I see the size check in the ByteToUint32 but not here. You will fill your header with false data ("0").
 	header := Header{}
 	header.MessageLength = util.ByteToUint32(request, 0)
 	if header.MessageLength == 0 {
 
-		return nil, HeaderNoLength
+		return nil, datatypes.HeaderNoLength
 	}
 
 	header.RequestID =  util.ByteToUint32(request, 4)
 	if header.RequestID == 0 {
-		return nil, HeaderNoRequestID
+		return nil, datatypes.HeaderNoRequestID
 	}
 	header.ResponseID =  util.ByteToUint32(request, 8)
 	header.OpCode =  util.ByteToUint32(request, 12)
 	if header.OpCode == 0 {
-		return nil, HeaderNoOpCode
+		return nil, datatypes.HeaderNoOpCode
 	}
 
-	return &header, NoError
+	return &header, datatypes.NoError
 }
 
 

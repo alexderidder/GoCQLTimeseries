@@ -4,12 +4,13 @@ import (
 	"GoCQLTimeSeries/model"
 	"GoCQLTimeSeries/server/cassandra"
 	"GoCQLTimeSeries/server/socket/tls"
+	"github.com/pkg/profile"
 )
 
 //Reads the config file, then gocql driver connects to Cassandra with config values in a new Thread/GoRoutine. The main blocks with the StartTLS server, it accepts a connection and adds a Thread to communicate with this connection.
 
 func main() {
-
+	defer profile.Start().Stop()
 	config, err := model.DecodeConfigJSON("conf.json")
 	if err != nil {
 		//Close program because config attributes are needed
