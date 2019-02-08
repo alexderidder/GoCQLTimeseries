@@ -10,7 +10,7 @@ import (
 )
 
 type RequestFlag1 struct {
-	request *RequestJSON
+	Request *RequestJSON
 }
 
 func parseFlag1(message []byte, indexOfMessage int) (*RequestFlag1, datatypes.Error) {
@@ -27,7 +27,7 @@ func parseFlag1(message []byte, indexOfMessage int) (*RequestFlag1, datatypes.Er
 }
 
 func (requestJSON *RequestFlag1) marshalBytes(message []byte, indexOfMessage int) datatypes.Error {
-	err := json.Unmarshal(message[indexOfMessage:], requestJSON.request)
+	err := json.Unmarshal(message[indexOfMessage:], requestJSON.Request)
 	if err != nil {
 		return datatypes.UnMarshallError
 	}
@@ -36,17 +36,17 @@ func (requestJSON *RequestFlag1) marshalBytes(message []byte, indexOfMessage int
 }
 
 func (requestJSON *RequestFlag1) checkParameters() datatypes.Error {
-	if len(requestJSON.request.StoneIDs) == 0 {
+	if len(requestJSON.Request.StoneIDs) == 0 {
 		return datatypes.MissingStoneID
 	}
 
-	if !requestJSON.request.StartTime.Valid {
-		if !requestJSON.request.EndTime.Valid {
+	if !requestJSON.Request.StartTime.Valid {
+		if !requestJSON.Request.EndTime.Valid {
 			return datatypes.MissingStartAndEndTime
 		}
 		return datatypes.MissingStartTime
 	}
-	if !requestJSON.request.EndTime.Valid {
+	if !requestJSON.Request.EndTime.Valid {
 		return datatypes.MissingEndTime
 	}
 
@@ -55,12 +55,12 @@ func (requestJSON *RequestFlag1) checkParameters() datatypes.Error {
 }
 
 func (requestJSON *RequestFlag1) Execute() ([]byte, datatypes.Error) {
-	response, error := requestJSON.executeDatabase()
+	response, error := requestJSON.ExecuteDatabase()
 	if !error.IsNull() {
 		return nil, error
 	}
-	if !requestJSON.request.StartTime.Valid {
-		if !requestJSON.request.EndTime.Valid {
+	if !requestJSON.Request.StartTime.Valid {
+		if !requestJSON.Request.EndTime.Valid {
 			return nil, datatypes.MissingStartAndEndTime
 		}
 		return nil,  datatypes.MissingStartTime
@@ -74,19 +74,19 @@ func (requestJSON *RequestFlag1) Execute() ([]byte, datatypes.Error) {
 	return append(util.Uint32ToByteArray(1), responseJSONBytes...), datatypes.NoError
 }
 
-func (requestJSON *RequestFlag1) executeDatabase() (*ResponseJSON, datatypes.Error) {
+func (requestJSON *RequestFlag1) ExecuteDatabase() (*ResponseJSON, datatypes.Error) {
 	response := ResponseJSON{map[string][]datatypes.Data{}}
 	var partDataList []datatypes.Data
 	var dataList []datatypes.Data
 	var layer1DataForInsertion []datatypes.StoneIDsWithBucketsWithDataPoints
 
-	beginTime := requestJSON.request.StartTime.Value -config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
-	endTime := requestJSON.request.EndTime.Value + config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
+	beginTime := requestJSON.Request.StartTime.Value -config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
+	endTime := requestJSON.Request.EndTime.Value + config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
 	//Calculate interval for Raw retrieval
 	timeBuckets, timeValues := util.CalculateBucketsForRawRetrieval(beginTime, endTime)
 	timeQuery := ` AND time >= ? AND time <= ? `
 
-	for _, stoneID := range requestJSON.request.StoneIDs {
+	for _, stoneID := range requestJSON.Request.StoneIDs {
 		//Request bucket data from server
 		for _, timeBucket := range timeBuckets {
 
@@ -102,7 +102,6 @@ func (requestJSON *RequestFlag1) executeDatabase() (*ResponseJSON, datatypes.Err
 
 		timeBucketsLayer1, timeValues := util.CalculateBucketsForAggregatedRetrieval(&partDataList, beginTime, endTime)
 		lastYearBucket := int64(0)
-
 		//Request raw data
 		var aggrData []datatypes.BucketWithDataPoints
 		var lastDataPoint = datatypes.Data{Time:-1,}
@@ -130,11 +129,11 @@ func (requestJSON *RequestFlag1) executeDatabase() (*ResponseJSON, datatypes.Err
 		dataList = append(dataList, partDataList...)
 		partDataList = []datatypes.Data{}
 		if length := len(dataList); length > 2 {
-			if dataList[0].Time < requestJSON.request.StartTime.Value {
+			if dataList[0].Time < requestJSON.Request.StartTime.Value {
 				dataList = dataList[1:]
 				length --
 			}
-			if dataList[length-1].Time > requestJSON.request.StartTime.Value {
+			if dataList[length-1].Time > requestJSON.Request.StartTime.Value {
 				dataList = dataList[:length-1]
 			}
 		}

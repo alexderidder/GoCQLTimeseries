@@ -1,6 +1,7 @@
 package insert
 
 import (
+
 	"GoCQLTimeSeries/config"
 	"GoCQLTimeSeries/datatypes"
 	"GoCQLTimeSeries/server/cassandra"
@@ -13,12 +14,14 @@ import (
 
 type RequestFlag1 struct {
 	StoneID datatypes.JSONString `json:"stoneID"`
-	Data    []struct {
-		Time  int64 `json:"time"`
-		Value struct {
-			KWH datatypes.JSONFloat64 `json:"kWh"`
-		} `json:"value"`
-	} `json:"data"`
+	Data    []Data `json:"data"`
+}
+
+type Data struct {
+	Time  int64 `json:"time"`
+	Value struct {
+		KWH datatypes.JSONFloat64 `json:"kWh"`
+	} `json:"value"`
 }
 
 type ResponseFlag1 struct {
@@ -64,7 +67,7 @@ func (requestJSON *RequestFlag1) checkParameters() datatypes.Error {
 
 func (requestJSON *RequestFlag1) Execute() ([]byte, datatypes.Error) {
 
-	response, error := requestJSON.executeDatabase()
+	response, error := requestJSON.ExecuteDatabase()
 	if !error.IsNull() {
 		return nil, error
 	}
@@ -79,7 +82,7 @@ func (requestJSON *RequestFlag1) Execute() ([]byte, datatypes.Error) {
 	return append(util.Uint32ToByteArray(1), responseJSONBytes...), datatypes.NoError
 }
 
-func (requestJSON *RequestFlag1) executeDatabase() (*ResponseFlag1, datatypes.Error) {
+func (requestJSON *RequestFlag1) ExecuteDatabase() (*ResponseFlag1, datatypes.Error) {
 	response := &ResponseFlag1{}
 	var error datatypes.Error
 	batch, error := cassandra.CreateBatch()
@@ -98,10 +101,10 @@ func (requestJSON *RequestFlag1) executeDatabase() (*ResponseFlag1, datatypes.Er
 			return nil, datatypes.Error{100, "Can't insert after " + strconv.FormatInt(nowInMilli, 10)}
 		}
 	}
+
 	//var timestampInMilliSeconds int64
 	var currentWeek int64 = 0
 	for _, data := range requestJSON.Data {
-
 		if data.Value.KWH.Valid {
 			response.Succeed.KwH++
 			//Floors automatic, timestamp can't be below ..
@@ -111,14 +114,13 @@ func (requestJSON *RequestFlag1) executeDatabase() (*ResponseFlag1, datatypes.Er
 					return nil, err
 				}
 
-				for err = cassandra.ExecQuery("INSERT INTO w_pf_inserted_in_layer1 (time_bucket, id) VALUES (?, ?)", tempweek, requestJSON.StoneID.Value); !error.IsNull(); {
+				for err = cassandra.ExecQuery("INSERT INTO kwh_inserted_in_layer1 (time_bucket, id) VALUES (?, ?)", tempweek, requestJSON.StoneID.Value); !error.IsNull(); {
 
 				}
 
 				currentWeek = tempweek
 			}
-			//fmt.Println(currentWeek)
-			err := cassandra.AddQueryToBatchAndExecuteWhenBatchMax(batch, "INSERT INTO w_and_pf_by_id_and_time_raw (id, time_bucket, time, kwh) VALUES (?,?, ?, ?)", requestJSON.StoneID.Value, currentWeek, data.Time, data.Value.KWH.Value)
+			err := cassandra.AddQueryToBatchAndExecuteWhenBatchMax(batch, "INSERT INTO kWh_by_id_and_time_in_layer1 (id, time_bucket, time, kwh) VALUES (?,?, ?, ?)", requestJSON.StoneID.Value, currentWeek, data.Time, data.Value.KWH.Value)
 			if !err.IsNull() {
 				return nil, err
 			}

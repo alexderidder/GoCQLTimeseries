@@ -12,7 +12,7 @@ func TestInsertFlag2JSON(t *testing.T) {
 	assert.Equal(t, datatypes.NoError, err, "Check if no Error")
 	message = []byte("")
 	_, err = parseFlag2(message, 0)
-	assert.Equal(t, datatypes.Error{301, "unexpected end of JSON input"}, err, "Check for marshal error unexpected end")
+	assert.Equal(t, datatypes.UnMarshallError, err, "Check for marshal error unexpected end")
 
 	message = []byte("{\"data\":[{\"time\":1548258873000,\"value\" : {\"kWh\":1.5210}}]}")
 	_, err = parseFlag2(message, 0)

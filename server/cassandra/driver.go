@@ -75,6 +75,7 @@ func ExecQuery(stmt string, values ...interface{}) ( datatypes.Error) {
 		return  err
 
 	}
+	fmt.Println(stmt, values)
 	err := dbConn.Session.Query(stmt, values...).Exec()
 	if err != nil {
 		return datatypes.ExecuteCassandra

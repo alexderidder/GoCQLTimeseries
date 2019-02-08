@@ -1,6 +1,7 @@
 package delete
 
 import (
+	"GoCQLTimeSeries/config"
 	"GoCQLTimeSeries/datatypes"
 	"GoCQLTimeSeries/server/cassandra"
 	"GoCQLTimeSeries/util"
@@ -85,21 +86,43 @@ func (requestJSON *DeleteFlag1) Execute() ([]byte, datatypes.Error) {
 }
 
 func (requestJSON *DeleteFlag1) executeDatabase() (*ResponseFlag1, datatypes.Error) {
-	var queryTimePart string
 	var timeValues []interface{}
 	timeValues = append(timeValues, requestJSON.request.StoneID.Value)
 
-	var values string
-	var error datatypes.Error
-	values = util.UnitkWh
-	values = "DELETE " + values + " FROM kwh_by_id_and_time_v2 WHERE id = ? AND time = ?"
-	numberOfDeletions, error := requestJSON.request.selectAndInsert("SELECT time FROM w_and_pf_by_id_and_time_v2 WHERE id = ?"+queryTimePart, values, timeValues)
-	if !error.IsNull() {
-		return nil, error
-	}
+	beginTime := requestJSON.request.StartTime.Value -config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
+	endTime := requestJSON.request.EndTime.Value + config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
+	//Calculate interval for Raw retrieval
+	timeBuckets, timeValues := util.CalculateBucketsForRawRetrieval(beginTime, endTime)
+	timeQuery := ` AND time >= ? AND time <= ? `
+		//Request bucket data from server
+		for _, timeBucket := range timeBuckets {
+
+			queryValues := append([]interface{}{}, requestJSON.request.StoneID.Value, timeBucket)
+			queryValues = append(queryValues, timeValues...)
+
+			error := cassandra.ExecQuery("DELETE FROM kWh_by_id_and_time_in_layer2 WHERE id = ? and time_bucket = ?" +timeQuery, queryValues...)
+			if !error.IsNull() {
+				return nil, error
+			}
+
+		}
+	//fmt.Println(" Kom hier")
+	timeBuckets, timeValues = util.CalculateBucketsForAggregatedRetrieval(nil, beginTime, endTime)
+		for _, timeBucket := range timeBuckets {
+			queryValues := append([]interface{}{}, requestJSON.request.StoneID.Value, timeBucket)
+			queryValues = append(queryValues, timeValues...)
+
+			error := cassandra.ExecQuery("DELETE FROM kWh_by_id_and_time_in_layer1 WHERE id = ? and time_bucket = ?" +timeQuery, queryValues...)
+			if !error.IsNull() {
+				return nil, error
+			}
+
+
+		}
+
 	response := &ResponseFlag1{}
-	response.Succeed.KwH = numberOfDeletions
-	return response,  datatypes.NoError
+	response.Succeed.KwH = 1
+	return response, datatypes.NoError
 }
 
 func (requestJSON *DeleteJSON) selectAndInsert(selectQuery string, insertQuery string, values []interface{}) (uint32, datatypes.Error) {

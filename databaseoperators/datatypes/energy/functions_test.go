@@ -44,7 +44,7 @@ func TestWithNoTimestampsFromDatabase(t *testing.T) {
 	assert.Equal(t, copyList, aggregatedList, "Check if no value is added to aggregatedList")
 
 	lastValue = datatypes.Data{}
-	lastValue.Time = 100
+	lastValue.Time = 150
 	lastValue.Value.KWH = 150
 	checkValue = lastValue
 	lastValue, _ = DownsSampleRawDataToAggr1(&aggregatedList, lastValue, m)
@@ -124,7 +124,7 @@ func TestCheckWithPreciseAggregationTimestamps(t *testing.T) {
 	lastValue = datatypes.Data{Time: -1,}
 	lastValue, _ = DownsSampleRawDataToAggr1(&aggregatedList, lastValue, m)
 	assert.Equal(t, dataPointsFromDatabase[0], lastValue, "Last value is datapoint with time 0")
-	assert.Equal(t, append(dataPointsFromDatabase, dataPointsFromDatabase[0] ), aggregatedList, "Check if contains all values")
+	assert.Equal(t, dataPointsFromDatabase , aggregatedList, "Check if contains all values")
 
 }
 
@@ -208,7 +208,7 @@ func TestWithNoPreciseAggregationPoints(t *testing.T) {
 	lastValue = datatypes.Data{Time: -1,}
 	lastValue, _ = DownsSampleRawDataToAggr1(&aggregatedList, lastValue, m)
 	assert.Equal(t, dataPointsFromDatabase[0], lastValue, "Last value is datapoint with time 0")
-	assert.Equal(t, append([]datatypes.Data{dataPointsFromDatabase[0]}, dataPointsFromDatabase...) , aggregatedList, "Check if contains all values")
+	assert.Equal(t, dataPointsFromDatabase , aggregatedList, "Check if contains all values")
 
 }
 

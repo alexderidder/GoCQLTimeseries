@@ -11,78 +11,80 @@ import (
 
 func DownsSampleRawDataToAggr1(dataList *[]datatypes.Data, lastDataPoint datatypes.Data, iterator cassandra.Iterator) (datatypes.Data, datatypes.Error) {
 
-	var y1LastValue *float64
-	var x1LastTimestamp *int64
-	var y0PreviousValue = lastDataPoint.Value.KWH
-	var x0PreviousTimestamp = lastDataPoint.Time
-	var aggregatedXOfDataPoint int64
+		var y1LastValue *float64
+		var x1LastTimestamp *int64
+		var y0PreviousValue = lastDataPoint.Value.KWH
+		var x0PreviousTimestamp = lastDataPoint.Time
+		var aggregatedXOfDataPoint int64
 
-	if lastDataPoint.Time != -1 {
-		y0PreviousValue = lastDataPoint.Value.KWH
-		x0PreviousTimestamp = lastDataPoint.Time
-		aggregatedXOfDataPoint = x0PreviousTimestamp - (x0PreviousTimestamp % config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION) + config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
-
-	} else {
-		if iterator.Scan(&x1LastTimestamp, &y1LastValue) {
-			y0PreviousValue = *y1LastValue
-			x0PreviousTimestamp = *x1LastTimestamp
+		if lastDataPoint.Time != -1 {
+			y0PreviousValue = lastDataPoint.Value.KWH
+			x0PreviousTimestamp = lastDataPoint.Time
 			aggregatedXOfDataPoint = x0PreviousTimestamp - (x0PreviousTimestamp % config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION) + config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
-			data := datatypes.Data{Time: x0PreviousTimestamp}
-			data.Value.KWH = y0PreviousValue
-			*dataList = append(*dataList, data)
+
 		} else {
-			goto SkipIterator
-		}
-
-	}
-
-	for iterator.Scan(&x1LastTimestamp, &y1LastValue) {
-
-		if x1LastTimestamp != nil {
-
-			// Initialize aggregatedXOfDataPoint to rounded value of x0PreviousTimestamp at 5 minutes
-			if *x1LastTimestamp > aggregatedXOfDataPoint {
-				// If new timestamp is not in 5 minute range of the aggregated x point store previous dataPoint
-				if *x1LastTimestamp >= aggregatedXOfDataPoint+config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION {
-					data := datatypes.Data{Time: x0PreviousTimestamp}
-					data.Value.KWH = y0PreviousValue;
-					*dataList = append(*dataList, data)
-
-					data = datatypes.Data{Time: *x1LastTimestamp}
-					data.Value.KWH = *y1LastValue;
-					*dataList = append(*dataList, data)
-					aggregatedXOfDataPoint = *x1LastTimestamp - (*x1LastTimestamp % config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION) + config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
-				} else {
-					//Linear interpolation
-					kwh, _ := util.LinearInterpolation(x0PreviousTimestamp, *x1LastTimestamp, y0PreviousValue, *y1LastValue, aggregatedXOfDataPoint)
-					data := datatypes.Data{Time: aggregatedXOfDataPoint}
-					data.Value.KWH = kwh
-					*dataList = append(*dataList, data)
-					aggregatedXOfDataPoint += config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
-				}
-
+			if iterator.Scan(&x1LastTimestamp, &y1LastValue) {
+				y0PreviousValue = *y1LastValue
+				x0PreviousTimestamp = *x1LastTimestamp
+				aggregatedXOfDataPoint = x0PreviousTimestamp - (x0PreviousTimestamp % config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION) + config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
+				data := datatypes.Data{Time: x0PreviousTimestamp}
+				data.Value.KWH = y0PreviousValue
+				*dataList = append(*dataList, data)
+			} else {
+				goto SkipIterator
 			}
 
 		}
-		y0PreviousValue = *y1LastValue
-		x0PreviousTimestamp = *x1LastTimestamp
 
-	}
+		for iterator.Scan(&x1LastTimestamp, &y1LastValue) {
 
-SkipIterator:
+			if x1LastTimestamp != nil {
 
-	if err := iterator.Close(); err != nil {
-		error := datatypes.CassandraIterator
-		error.Message = err.Error()
-		return datatypes.Data{}, error
+				// Initialize aggregatedXOfDataPoint to rounded value of x0PreviousTimestamp at 5 minutes
+				if *x1LastTimestamp > aggregatedXOfDataPoint {
+					// If new timestamp is not in 5 minute range of the aggregated x point store previous dataPoint
+					if *x1LastTimestamp >= aggregatedXOfDataPoint+config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION {
+						data := datatypes.Data{Time: x0PreviousTimestamp}
+						data.Value.KWH = y0PreviousValue;
+						*dataList = append(*dataList, data)
 
-	}
+						data = datatypes.Data{Time: *x1LastTimestamp}
+						data.Value.KWH = *y1LastValue;
+						*dataList = append(*dataList, data)
+						aggregatedXOfDataPoint = *x1LastTimestamp - (*x1LastTimestamp % config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION) + config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
+					} else {
+						//Linear interpolation
+						kwh, _ := util.LinearInterpolation(x0PreviousTimestamp, *x1LastTimestamp, y0PreviousValue, *y1LastValue, aggregatedXOfDataPoint)
+						data := datatypes.Data{Time: aggregatedXOfDataPoint}
+						data.Value.KWH = kwh
+						*dataList = append(*dataList, data)
+						aggregatedXOfDataPoint += config.MILLI_SECONDS_INTERVAL_FOR_ENERGY_AGGREGATION
+					}
 
-	data := datatypes.Data{Time: x0PreviousTimestamp}
-	data.Value.KWH = y0PreviousValue;
-	if x0PreviousTimestamp != -1 {
-		*dataList = append(*dataList, data)
-	}
+				}
+
+			}
+			y0PreviousValue = *y1LastValue
+			x0PreviousTimestamp = *x1LastTimestamp
+
+		}
+
+	SkipIterator:
+
+		if err := iterator.Close(); err != nil {
+			error := datatypes.CassandraIterator
+			error.Message = err.Error()
+			return datatypes.Data{}, error
+
+		}
+
+		data := datatypes.Data{Time: x0PreviousTimestamp}
+		data.Value.KWH = y0PreviousValue;
+		if x0PreviousTimestamp != -1 {
+			if length := len(*dataList); length == 0 || (*dataList)[len(*dataList) -1].Time != data.Time{
+				*dataList = append(*dataList, data)
+			}
+		}
 	return data, datatypes.NoError
 }
 

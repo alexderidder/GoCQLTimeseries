@@ -32,15 +32,18 @@ func GetIntervalsWithAggr1BetweenDefaultStartStampAndNow() ([]int64) {
 
 func CalculateBucketsForAggregatedRetrieval(partDataList *[]datatypes.Data, startTime int64, endTime int64) ([]int64, []interface{}) {
 	var timeBucketsWeek []int64
-	if length := len(*partDataList) - 1; length > -1 {
-		startTime = (*partDataList)[length].Time
+
+	if partDataList != nil && len(*partDataList)  > 0 {
+		startTime = (*partDataList)[len(*partDataList) - 1].Time
 		timeBucketsWeek = WeeksBetweenDates(startTime, endTime)
 		timeValues := append([]interface{}{}, startTime)
 		timeValues = append(timeValues, endTime)
 		return timeBucketsWeek, timeValues
 	} else {
-		///return error
-		return nil, nil
+		timeBucketsWeek = WeeksBetweenDates(startTime, endTime)
+		timeValues := append([]interface{}{}, startTime)
+		timeValues = append(timeValues, endTime)
+		return timeBucketsWeek, timeValues
 	}
 
 

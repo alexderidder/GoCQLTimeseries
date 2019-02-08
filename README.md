@@ -48,9 +48,8 @@ Edit conf.json to your setup
  
 ```
  go build main.go
- .\main.exe
+ `main.exe` is created and can be executed
 ```
-
 
 ## Standard Message Header
 In general, each message consists of a standard message header followed by request-specific data. The standard message header is structured as follows:
@@ -77,7 +76,8 @@ Opcode Name | Value | Comment
 type | Name | Description
 ------------ | ------------ | -------------
 16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** Energy Usage  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_request_type_1) - [Response](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_response_type_1)<br> **2** Power Usage - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_request_type_1) -  [Response](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_response_type_2)
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** Energy Usage  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_request_type_1) - [Response](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_response_type_1)<br> **2** Power Usage - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_request_type_1) -  [Response](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#query_response_type_2) <br> 
+json | payload | Depends on flag
 
 
 #### Query request type 1
@@ -88,7 +88,6 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
    ],
    "startTime":"1548252675000", //Epoch in ms
    "endTime":"1548252905000", //Epoch in ms
-   "interval":0, //optional
 }
 ```
 
@@ -97,20 +96,19 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 {  
    "startTime":"1548252675000", //Epoch in ms
    "endTime":"1548252905000", //Epoch in ms
-   "interval":0, //optional
    "stones":[  
       {  
          "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
          "Data":[  
             {  
-               "time":"2018-11-12T13:19:55.148Z",
+               "time":"1548252673000", //Epoch in ms
                "value":
                {
                     "kWh" : 3.0233014
                }
             },
             {  
-               "time":"2018-11-12T13:19:55.149Z",
+               "time":"1548252678000", //Epoch in ms
                "value":
                {
                    "kWh" : 2.188571
@@ -126,17 +124,16 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 {  
    "startTime":"1548252675000", //Epoch in ms
    "endTime":"1548252905000", //Epoch in ms
-   "interval":0, //optional
    "stones":[  
       {  
          "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
          "Data":[  
             {  
-               "time":"2018-11-12T13:19:55.148Z",
+               "time":"1548252675000", //Epoch in ms
                "value": {"w": 3, "pf" : 1}
             },
             {  
-               "time":"2018-11-12T13:19:55.149Z",
+               "time":"1548252678000", //Epoch in ms
                "value": {"w": 2, "pf" : 1}
             }
          ]
@@ -149,7 +146,8 @@ uint32 | flag | (Bit vector to specify flags for the operation. The bit values c
 type | Name | Description
 ------------ | ------------ | -------------
 16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** [Energy History](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert-request-type-1) <br>  **2** [Power History](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert-request-type-2)
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** [Energy History](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert-request-type-1) <br>  **2** [Power History](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#insert-request-type-2)<br> 
+json | payload | Depends on flag
 
 #### Insert request type 1
 ```json 
@@ -193,14 +191,15 @@ The database will respond to an OP_QUERY message with an [OP_REPLY](https://gith
 type | Name | Description
 ------------ | ------------ | -------------
 16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** Energy History  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_request_type_1)<br>  **2** Power History  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_request_type_1)
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** Energy History  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_request_type_1)<br>  **2** Power History  - [Request](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#delete_request_type_1)<br> 
+                                                                                                                                                                                                                                                                                                                                                                                     json | payload | Depends on flag
 
 #### Delete request type 1
 ```json 
 {  
    "stoneID":"bf82e78d-24a2-470d-abb8-9e0a2720619f",
    "startTime":"1548252679000", //Epoch in ms
-   "endTime":"1548252680000" //optional
+   "endTime":"1548252680000" //Epoch in ms
 } 
 ```
 The database will respond to an OP_QUERY message with an [OP_REPLY](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#op_reply) message.
@@ -211,7 +210,8 @@ The database will respond to an OP_QUERY message with an [OP_REPLY](https://gith
 type | Name | Description
 ------------ | ------------ | -------------
 16 byte | header | Message header, as described in [Standard Message Header](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#standard-message-header).
-uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** Ok (Payload depends of [Client request message](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#client-request-messages ))<br> **2** No Content (No payload)<br> **100** [Error](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#error-codes)
+uint32 | flag | (Bit vector to specify flags for the operation. The bit values correspond to the following: <br>  **1** Ok (Payload depends of [Client request message](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#client-request-messages ))<br> **2** No Content (No payload)<br> **100** [Error](https://github.com/alexderidder/GoCQLTimeseries/blob/master/README.md/#error-codes)<br> 
+json | payload | Depends on flag
 
 
 #### Error codes

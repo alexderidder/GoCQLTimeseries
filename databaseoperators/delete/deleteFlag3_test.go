@@ -12,7 +12,7 @@ func TestDeleteFlag3JSON(t *testing.T) {
 	assert.Equal(t, datatypes.NoError, err, "Check if no Error")
 	message = []byte("")
 	_, err = parseFlag3(message, 0)
-	assert.Equal(t, datatypes.Error{301, "unexpected end of JSON input"}, err, "Check for marshal error unexpected end")
+	assert.Equal(t, datatypes.UnMarshallError, err, "Check for marshal error unexpected end")
 
 	message = []byte("{\"stoneID\":[]}")
 	_, err = parseFlag3(message, 0)
